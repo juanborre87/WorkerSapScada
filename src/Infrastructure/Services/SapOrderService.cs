@@ -51,7 +51,10 @@ namespace Infrastructure.Services
                     ConfirmationUnit = confirmation.ConfirmationUnit,
                     ConfirmationUnitISOCode = confirmation.ConfirmationUnitISOCode,
                     ConfirmationYieldQuantity = confirmation.ConfirmationYieldQuantity,
-                    to_ProcOrdConfMatlDocItm = confirmation.To_ProcOrdConfMatlDocItm
+                    to_ProcOrdConfMatlDocItm = new
+                    {
+                        results = confirmation.To_ProcOrdConfMatlDocItm
+                    }
                 });
 
                 var content = new StringContent(json, Encoding.UTF8, "application/json");
