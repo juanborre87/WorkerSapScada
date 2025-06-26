@@ -25,10 +25,26 @@ namespace Infrastructure.Services
 
         public async Task<bool> SendOrderConfirmationAsync(OrderConfirmationRequest confirmation)
         {
-            var requestUrl = "https://sapfioriqas.sap.acacoop.com.ar:443/sap/opu/odata/SAP/API_PROC_ORDER_CONFIRMATION_2_SRV/ProcOrdConf2";
+            var csrfUrl = "https://sapfioriqas.sap.acacoop.com.ar:443/sap/opu/odata/SAP/API_PROC_ORDER_CONFIRMATION_2_SRV/";
+            var postUrl = $"{csrfUrl}ProcOrdConf2";
 
             try
             {
+                // 1. Obtener token CSRF
+                var csrfRequest = new HttpRequestMessage(HttpMethod.Get, csrfUrl);
+                csrfRequest.Headers.Add("x-csrf-token", "Fetch");
+
+                var csrfResponse = await _httpClient.SendAsync(csrfRequest);
+                if (!csrfResponse.IsSuccessStatusCode)
+                {
+                    Console.WriteLine($"[SAP CSRF Error {csrfResponse.StatusCode}] {await csrfResponse.Content.ReadAsStringAsync()}");
+                    return false;
+                }
+
+                var csrfToken = csrfResponse.Headers.GetValues("x-csrf-token").FirstOrDefault();
+                var cookies = csrfResponse.Headers.GetValues("Set-Cookie");
+
+                // 2. Preparar payload JSON
                 var json = JsonConvert.SerializeObject(new
                 {
                     OrderID = confirmation.OrderID,
@@ -40,23 +56,27 @@ namespace Infrastructure.Services
 
                 var content = new StringContent(json, Encoding.UTF8, "application/json");
 
-                // 🔐 Seguridad ya está configurada en el constructor (_httpClient)
+                // 3. Crear solicitud POST
+                var postRequest = new HttpRequestMessage(HttpMethod.Post, postUrl);
+                postRequest.Headers.Add("x-csrf-token", csrfToken);
+                postRequest.Headers.Add("Cookie", string.Join("; ", cookies));
+                postRequest.Content = content;
 
-                var response = await _httpClient.PostAsync(requestUrl, content);
-                var responseContent = await response.Content.ReadAsStringAsync();
+                var postResponse = await _httpClient.SendAsync(postRequest);
+                var postContent = await postResponse.Content.ReadAsStringAsync();
 
-                if (!response.IsSuccessStatusCode)
+                if (!postResponse.IsSuccessStatusCode)
                 {
-                    Console.WriteLine($"[SAP Error {response.StatusCode}] {responseContent}");
+                    Console.WriteLine($"[SAP POST Error {postResponse.StatusCode}] {postContent}");
                     return false;
                 }
 
-                Console.WriteLine("[SAP Response] " + responseContent);
+                Console.WriteLine("[SAP POST Success] " + postContent);
                 return true;
             }
             catch (Exception ex)
             {
-                Console.WriteLine("[SAP Post Error] " + ex.Message);
+                Console.WriteLine("[SAP POST Exception] " + ex.Message);
                 return false;
             }
         }
