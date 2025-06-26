@@ -81,6 +81,8 @@ public class UpdateCommandHandler(
             };
 
             var result = await sapOrderService.SendOrderConfirmationAsync(sapRequest);
+            confirmation.Status = 1;
+            await processOrderCommandSqlDB.UpdateAsync(confirmation);
 
             return new Response<UpdateResponse>
             {
