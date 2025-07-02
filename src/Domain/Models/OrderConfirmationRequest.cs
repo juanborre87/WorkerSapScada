@@ -55,14 +55,14 @@ namespace Domain.Models
         [JsonProperty("OrderConfirmationRecordType")]
         public string OrderConfirmationRecordType { get; set; }
 
-        [JsonProperty("ConfirmationEntryDate")]
-        public string ConfirmationEntryDate { get; set; }
+        //[JsonProperty("ConfirmationEntryDate")]
+        //public string ConfirmationEntryDate { get; set; }
 
-        [JsonProperty("ConfirmationEntryTime")]
-        public string ConfirmationEntryTime { get; set; }
+        //[JsonProperty("ConfirmationEntryTime")]
+        //public string ConfirmationEntryTime { get; set; }
 
-        [JsonProperty("EnteredByUser")]
-        public string EnteredByUser { get; set; }
+        //[JsonProperty("EnteredByUser")]
+        //public string EnteredByUser { get; set; }
 
         [JsonProperty("LastChangeDate")]
         public string LastChangeDate { get; set; }
@@ -70,14 +70,14 @@ namespace Domain.Models
         [JsonProperty("LastChangedByUser")]
         public string LastChangedByUser { get; set; }
 
-        [JsonProperty("ConfirmationExternalEntryDate")]
-        public string ConfirmationExternalEntryDate { get; set; }
+        //[JsonProperty("ConfirmationExternalEntryDate")]
+        //public string ConfirmationExternalEntryDate { get; set; }
 
-        [JsonProperty("ConfirmationExternalEntryTime")]
-        public string ConfirmationExternalEntryTime { get; set; }
+        //[JsonProperty("ConfirmationExternalEntryTime")]
+        //public string ConfirmationExternalEntryTime { get; set; }
 
-        [JsonProperty("EnteredByExternalUser")]
-        public string EnteredByExternalUser { get; set; }
+        //[JsonProperty("EnteredByExternalUser")]
+        //public string EnteredByExternalUser { get; set; }
 
         [JsonProperty("ExternalSystemConfirmation")]
         public string ExternalSystemConfirmation { get; set; }

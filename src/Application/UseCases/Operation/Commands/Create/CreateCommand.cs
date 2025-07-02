@@ -27,7 +27,9 @@ public class CreateCommandHandler(
 
         try
         {
-            var confirmation = await processOrderConfirmationQuerySqlDB.FirstOrDefaultAsync(x => x.CommStatus == 1);
+            var confirmation = await processOrderConfirmationQuerySqlDB.FirstOrDefaultIncludeAsync(
+                nameof(ProcessOrderConfirmation.Order),
+                x => x.CommStatus == 1);
 
             if (confirmation == null)
             {
@@ -38,9 +40,11 @@ public class CreateCommandHandler(
                 };
             }
 
-            var materialMovement = await materialMovementQuerySqlDB.WhereAsync(x => x.ProcessOrderConfirmationId == confirmation.Id);
+            var movements = await materialMovementQuerySqlDB.WhereIncludeAsync(
+                nameof(ProcessOrderConfirmationMaterialMovement.ProcessOrderComponent),
+                x => x.ProcessOrderConfirmationId == confirmation.Id);
 
-            if (materialMovement == null)
+            if (movements == null)
             {
                 return new Response<CreateResponse>
                 {
@@ -49,7 +53,8 @@ public class CreateCommandHandler(
                 };
             }
 
-            var sapRequest = SapConfirmationMapper.MapToDto(confirmation, materialMovement);
+            var sapRequest = SapConfirmationMapper.MapToDto(confirmation, movements);
+            //sapRequest.EnteredByUser = "DSALAZAR";
             var result = await sapOrderService.SendOrderConfirmationAsync(sapRequest);
 
 
