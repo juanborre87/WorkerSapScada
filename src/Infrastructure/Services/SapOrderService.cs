@@ -25,19 +25,36 @@ namespace Infrastructure.Services
 
         public async Task<bool> SendOrderConfirmationAsync(OrderConfirmationRequest confirmation)
         {
-            var postUrl = "https://api.sap.com/api/API_PROC_ORDER_CONFIRMATION_2_SRV/resource/Process_Order_Confirmation";
+            var baseUrl = "https://sapfioriqas.sap.acacoop.com.ar:443/sap/opu/odata/SAP/API_PROC_ORDER_CONFIRMATION_2_SRV/";
+            var postUrl = $"{baseUrl}Process_Order_Confirmation"; // ← nueva URL de confirmación
 
             try
             {
-                // 1. Serializar el objeto a JSON
+                // 1. Obtener token CSRF
+                var csrfRequest = new HttpRequestMessage(HttpMethod.Get, baseUrl);
+                csrfRequest.Headers.Add("x-csrf-token", "Fetch");
+
+                var csrfResponse = await _httpClient.SendAsync(csrfRequest);
+                if (!csrfResponse.IsSuccessStatusCode)
+                {
+                    Console.WriteLine($"[SAP CSRF Error {csrfResponse.StatusCode}] {await csrfResponse.Content.ReadAsStringAsync()}");
+                    return false;
+                }
+
+                var csrfToken = csrfResponse.Headers.GetValues("x-csrf-token").FirstOrDefault();
+                var cookies = csrfResponse.Headers.TryGetValues("Set-Cookie", out var setCookies)
+                    ? setCookies
+                    : Enumerable.Empty<string>();
+
+                // 2. Serializar el DTO
                 var json = JsonConvert.SerializeObject(confirmation);
                 var content = new StringContent(json, Encoding.UTF8, "application/json");
 
-                // 2. Enviar POST directamente con autenticación básica
-                var postRequest = new HttpRequestMessage(HttpMethod.Post, postUrl)
-                {
-                    Content = content
-                };
+                // 3. Crear solicitud POST con token CSRF y cookies
+                var postRequest = new HttpRequestMessage(HttpMethod.Post, postUrl);
+                postRequest.Headers.Add("x-csrf-token", csrfToken);
+                postRequest.Headers.Add("Cookie", string.Join("; ", cookies));
+                postRequest.Content = content;
 
                 var postResponse = await _httpClient.SendAsync(postRequest);
                 var postContent = await postResponse.Content.ReadAsStringAsync();
