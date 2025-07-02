@@ -53,8 +53,8 @@ public class CreateCommandHandler(
             var result = await sapOrderService.SendOrderConfirmationAsync(sapRequest);
 
 
-            confirmation.CommStatus = 2;
-            await processOrderCommandSqlDB.UpdateAsync(confirmation);
+            //confirmation.CommStatus = 2;
+            //await processOrderCommandSqlDB.UpdateAsync(confirmation);
 
             return new Response<CreateResponse>
             {
