@@ -2,7 +2,7 @@
 
 public partial class ProcessOrderConfirmationMaterialMovement
 {
-    public long ProcessOrderConfirmationMaterialMovementId { get; set; }
+    public long Id { get; set; }
 
     public long ProcessOrderConfirmationId { get; set; }
 
@@ -17,6 +17,8 @@ public partial class ProcessOrderConfirmationMaterialMovement
     public float? QuantityInEntryUnit { get; set; }
 
     public DateTime? GoodsMovementDateTime { get; set; }
+
+    public DateTime? InterfaceTimestamp { get; set; }
 
     public virtual ProcessOrderComponent ProcessOrderComponent { get; set; }
 

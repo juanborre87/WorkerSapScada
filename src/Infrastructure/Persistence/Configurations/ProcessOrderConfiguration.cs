@@ -8,13 +8,18 @@ public class ProcessOrderConfiguration : IEntityTypeConfiguration<ProcessOrder>
 {
     public void Configure(EntityTypeBuilder<ProcessOrder> entity)
     {
-        entity.HasKey(e => e.ManufacturingOrder);
+        entity.HasKey(e => e.Id).HasName("PK__ProcessO__3214EC079F66E3DF");
 
         entity.ToTable("ProcessOrder");
 
-        entity.Property(e => e.ManufacturingOrder).ValueGeneratedNever();
+        entity.HasIndex(e => e.ManufacturingOrder, "UQ__ProcessO__F6CEB4CF2652C798").IsUnique();
+
         entity.Property(e => e.GoodsRecipientName).HasMaxLength(50);
+        entity.Property(e => e.InterfaceTimestamp).HasColumnType("datetime");
         entity.Property(e => e.LastChangeDateTime).HasColumnType("datetime");
+        entity.Property(e => e.ManufacturingOrder)
+            .IsRequired()
+            .HasMaxLength(50);
         entity.Property(e => e.ManufacturingOrderCategory).HasMaxLength(50);
         entity.Property(e => e.ManufacturingOrderType).HasMaxLength(50);
         entity.Property(e => e.Material).HasMaxLength(50);
@@ -38,12 +43,17 @@ public class ProcessOrderConfiguration : IEntityTypeConfiguration<ProcessOrder>
         entity.Property(e => e.StorageLocation).HasMaxLength(50);
         entity.Property(e => e.UnloadingPointName).HasMaxLength(50);
 
+        entity.HasOne(d => d.CommStatusNavigation).WithMany(p => p.ProcessOrders)
+            .HasForeignKey(d => d.CommStatus)
+            .OnDelete(DeleteBehavior.ClientSetNull)
+            .HasConstraintName("FK_ProcessOrder_CommStatus");
+
         entity.HasOne(d => d.MaterialNavigation).WithMany(p => p.ProcessOrders)
             .HasForeignKey(d => d.Material)
             .HasConstraintName("FK_ProcessOrder_Product");
 
         entity.HasOne(d => d.StatusNavigation).WithMany(p => p.ProcessOrders)
             .HasForeignKey(d => d.Status)
-            .HasConstraintName("FK_ProcessOrder_ProcessOrderStatus");
+            .HasConstraintName("FK_ProcessOrder_Status");
     }
 }

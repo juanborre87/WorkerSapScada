@@ -4,13 +4,13 @@ using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
 namespace Infrastructure.Persistence.Configurations;
 
-public class ProcessOrderStatusConfiguration : IEntityTypeConfiguration<ProcessOrderStatus>
+public class CommStatusConfiguration : IEntityTypeConfiguration<CommStatus>
 {
-    public void Configure(EntityTypeBuilder<ProcessOrderStatus> entity)
+    public void Configure(EntityTypeBuilder<CommStatus> entity)
     {
-        entity.HasKey(e => e.Id).HasName("PK__ProcessO__3214EC07FCF7F8E4");
+        entity.HasKey(e => e.Id).HasName("PK__CommStat__3214EC079C5F650D");
 
-        entity.ToTable("ProcessOrderStatus");
+        entity.ToTable("CommStatus");
 
         entity.Property(e => e.Description)
             .IsRequired()

@@ -2,7 +2,9 @@
 
 public partial class ProcessOrder
 {
-    public long ManufacturingOrder { get; set; }
+    public long Id { get; set; }
+
+    public string ManufacturingOrder { get; set; }
 
     public string ManufacturingOrderCategory { get; set; }
 
@@ -56,11 +58,17 @@ public partial class ProcessOrder
 
     public byte? Status { get; set; }
 
+    public byte CommStatus { get; set; }
+
+    public DateTime? InterfaceTimestamp { get; set; }
+
+    public virtual CommStatus CommStatusNavigation { get; set; }
+
     public virtual Product MaterialNavigation { get; set; }
 
-    public virtual ICollection<ProcessOrderComponent> ProcessOrderComponents { get; set; } = [];
+    public virtual ICollection<ProcessOrderComponent> ProcessOrderComponents { get; set; } = new List<ProcessOrderComponent>();
 
-    public virtual ICollection<ProcessOrderConfirmation> ProcessOrderConfirmations { get; set; } = [];
+    public virtual ICollection<ProcessOrderConfirmation> ProcessOrderConfirmations { get; set; } = new List<ProcessOrderConfirmation>();
 
     public virtual ProcessOrderStatus StatusNavigation { get; set; }
 }

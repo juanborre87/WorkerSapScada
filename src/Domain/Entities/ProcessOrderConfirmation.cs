@@ -2,9 +2,9 @@
 
 public partial class ProcessOrderConfirmation
 {
-    public long ProcessOrderConfirmationId { get; set; }
+    public long Id { get; set; }
 
-    public long OrderId { get; set; }
+    public string OrderId { get; set; }
 
     public string ConfirmationText { get; set; }
 
@@ -40,13 +40,15 @@ public partial class ProcessOrderConfirmation
 
     public DateTime? Expiration { get; set; }
 
-    public byte? Status { get; set; }
+    public byte? Sapresponse { get; set; }
 
-    public byte? ScadaFlag { get; set; }
+    public byte CommStatus { get; set; }
+
+    public DateTime? InterfaceTimestamp { get; set; }
+
+    public virtual CommStatus CommStatusNavigation { get; set; }
 
     public virtual ProcessOrder Order { get; set; }
 
-    public virtual ICollection<ProcessOrderConfirmationMaterialMovement> ProcessOrderConfirmationMaterialMovements { get; set; } = [];
-
-    public virtual OrderConfirmationStatus StatusNavigation { get; set; }
+    public virtual ICollection<ProcessOrderConfirmationMaterialMovement> ProcessOrderConfirmationMaterialMovements { get; set; } = new List<ProcessOrderConfirmationMaterialMovement>();
 }

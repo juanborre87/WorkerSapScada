@@ -27,8 +27,8 @@ public class Worker : BackgroundService
         while (!stoppingToken.IsCancellationRequested)
         {
             var scopedService = scope.ServiceProvider.GetRequiredService<IScopedService>();
-            await scopedService.Update();
-            await Task.Delay(TimeSpan.FromMinutes(delayTime), stoppingToken);
+            await scopedService.Create();
+            await Task.Delay(TimeSpan.FromSeconds(5), stoppingToken);
         }
     }
 }
