@@ -25,13 +25,13 @@ namespace Infrastructure.Services
 
         public async Task<bool> SendOrderConfirmationAsync(OrderConfirmationRequest confirmation)
         {
-            var baseUrl = "https://sapfioriqas.sap.acacoop.com.ar:443/sap/opu/odata/SAP/API_PROC_ORDER_CONFIRMATION_2_SRV/";
-            var postUrl = $"{baseUrl}Process_Order_Confirmation"; // ← nueva URL de confirmación
+            var csrfUrl = "https://sapfioriqas.sap.acacoop.com.ar:443/sap/opu/odata/SAP/API_PROC_ORDER_CONFIRMATION_2_SRV/";
+            var postUrl = $"{csrfUrl}ProcOrdConf2";
 
             try
             {
                 // 1. Obtener token CSRF
-                var csrfRequest = new HttpRequestMessage(HttpMethod.Get, baseUrl);
+                var csrfRequest = new HttpRequestMessage(HttpMethod.Get, csrfUrl);
                 csrfRequest.Headers.Add("x-csrf-token", "Fetch");
 
                 var csrfResponse = await _httpClient.SendAsync(csrfRequest);
@@ -42,15 +42,13 @@ namespace Infrastructure.Services
                 }
 
                 var csrfToken = csrfResponse.Headers.GetValues("x-csrf-token").FirstOrDefault();
-                var cookies = csrfResponse.Headers.TryGetValues("Set-Cookie", out var setCookies)
-                    ? setCookies
-                    : Enumerable.Empty<string>();
+                var cookies = csrfResponse.Headers.GetValues("Set-Cookie");
 
                 // 2. Serializar el DTO
                 var json = JsonConvert.SerializeObject(confirmation);
                 var content = new StringContent(json, Encoding.UTF8, "application/json");
 
-                // 3. Crear solicitud POST con token CSRF y cookies
+                // 3. Crear solicitud POST
                 var postRequest = new HttpRequestMessage(HttpMethod.Post, postUrl);
                 postRequest.Headers.Add("x-csrf-token", csrfToken);
                 postRequest.Headers.Add("Cookie", string.Join("; ", cookies));
