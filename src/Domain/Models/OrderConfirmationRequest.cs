@@ -7,17 +7,17 @@ namespace Domain.Models
         [JsonProperty("OrderID")]
         public string OrderID { get; set; }
 
-        [JsonProperty("OrderOperation")]
-        public string OrderOperation { get; set; }
+        //[JsonProperty("OrderOperation")]
+        //public string OrderOperation { get; set; }
 
-        [JsonProperty("OrderSuboperation")]
-        public string OrderSuboperation { get; set; }
+        //[JsonProperty("OrderSuboperation")]
+        //public string OrderSuboperation { get; set; }
 
-        [JsonProperty("OrderType")]
-        public string OrderType { get; set; }
+        //[JsonProperty("OrderType")]
+        //public string OrderType { get; set; }
 
-        [JsonProperty("OrderOperationInternalID")]
-        public string OrderOperationInternalID { get; set; }
+        //[JsonProperty("OrderOperationInternalID")]
+        //public string OrderOperationInternalID { get; set; }
 
         [JsonProperty("ConfirmationText")]
         public string ConfirmationText { get; set; }
@@ -25,14 +25,14 @@ namespace Domain.Models
         [JsonProperty("Language")]
         public string Language { get; set; }
 
-        [JsonProperty("Material")]
-        public string Material { get; set; }
+        //[JsonProperty("Material")]
+        //public string Material { get; set; }
 
-        [JsonProperty("OrderPlannedTotalQty")]
-        public string OrderPlannedTotalQty { get; set; }
+        //[JsonProperty("OrderPlannedTotalQty")]
+        //public string OrderPlannedTotalQty { get; set; }
 
-        [JsonProperty("ProductionUnit")]
-        public string ProductionUnit { get; set; }
+        //[JsonProperty("ProductionUnit")]
+        //public string ProductionUnit { get; set; }
 
         [JsonProperty("FinalConfirmationType")]
         public string FinalConfirmationType { get; set; }
@@ -52,8 +52,8 @@ namespace Domain.Models
         [JsonProperty("APIConfHasNoGoodsMovements")]
         public bool APIConfHasNoGoodsMovements { get; set; }
 
-        [JsonProperty("OrderConfirmationRecordType")]
-        public string OrderConfirmationRecordType { get; set; }
+        //[JsonProperty("OrderConfirmationRecordType")]
+        //public string OrderConfirmationRecordType { get; set; }
 
         //[JsonProperty("ConfirmationEntryDate")]
         //public string ConfirmationEntryDate { get; set; }
@@ -64,11 +64,11 @@ namespace Domain.Models
         //[JsonProperty("EnteredByUser")]
         //public string EnteredByUser { get; set; }
 
-        [JsonProperty("LastChangeDate")]
-        public string LastChangeDate { get; set; }
+        //[JsonProperty("LastChangeDate")]
+        //public string LastChangeDate { get; set; }
 
-        [JsonProperty("LastChangedByUser")]
-        public string LastChangedByUser { get; set; }
+        //[JsonProperty("LastChangedByUser")]
+        //public string LastChangedByUser { get; set; }
 
         //[JsonProperty("ConfirmationExternalEntryDate")]
         //public string ConfirmationExternalEntryDate { get; set; }
@@ -79,50 +79,50 @@ namespace Domain.Models
         //[JsonProperty("EnteredByExternalUser")]
         //public string EnteredByExternalUser { get; set; }
 
-        [JsonProperty("ExternalSystemConfirmation")]
-        public string ExternalSystemConfirmation { get; set; }
+        //[JsonProperty("ExternalSystemConfirmation")]
+        //public string ExternalSystemConfirmation { get; set; }
 
-        [JsonProperty("Plant")]
-        public string Plant { get; set; }
+        //[JsonProperty("Plant")]
+        //public string Plant { get; set; }
 
-        [JsonProperty("WorkCenterTypeCode")]
-        public string WorkCenterTypeCode { get; set; }
+        //[JsonProperty("WorkCenterTypeCode")]
+        //public string WorkCenterTypeCode { get; set; }
 
-        [JsonProperty("WorkCenter")]
-        public string WorkCenter { get; set; }
+        //[JsonProperty("WorkCenter")]
+        //public string WorkCenter { get; set; }
 
-        [JsonProperty("ShiftGrouping")]
-        public string ShiftGrouping { get; set; }
+        //[JsonProperty("ShiftGrouping")]
+        //public string ShiftGrouping { get; set; }
 
-        [JsonProperty("ShiftDefinition")]
-        public string ShiftDefinition { get; set; }
+        //[JsonProperty("ShiftDefinition")]
+        //public string ShiftDefinition { get; set; }
 
         [JsonProperty("Personnel")]
         public string Personnel { get; set; }
 
-        [JsonProperty("TimeRecording")]
-        public string TimeRecording { get; set; }
+        //[JsonProperty("TimeRecording")]
+        //public string TimeRecording { get; set; }
 
-        [JsonProperty("EmployeeWageType")]
-        public string EmployeeWageType { get; set; }
+        //[JsonProperty("EmployeeWageType")]
+        //public string EmployeeWageType { get; set; }
 
-        [JsonProperty("EmployeeWageGroup")]
-        public string EmployeeWageGroup { get; set; }
+        //[JsonProperty("EmployeeWageGroup")]
+        //public string EmployeeWageGroup { get; set; }
 
-        [JsonProperty("BreakDurationUnit")]
-        public string BreakDurationUnit { get; set; }
+        //[JsonProperty("BreakDurationUnit")]
+        //public string BreakDurationUnit { get; set; }
 
-        [JsonProperty("BreakDurationUnitISOCode")]
-        public string BreakDurationUnitISOCode { get; set; }
+        //[JsonProperty("BreakDurationUnitISOCode")]
+        //public string BreakDurationUnitISOCode { get; set; }
 
-        [JsonProperty("BreakDurationUnitSAPCode")]
-        public string BreakDurationUnitSAPCode { get; set; }
+        //[JsonProperty("BreakDurationUnitSAPCode")]
+        //public string BreakDurationUnitSAPCode { get; set; }
 
         [JsonProperty("ConfirmedBreakDuration")]
         public string ConfirmedBreakDuration { get; set; }
 
-        [JsonProperty("EmployeeSuitability")]
-        public string EmployeeSuitability { get; set; }
+        //[JsonProperty("EmployeeSuitability")]
+        //public string EmployeeSuitability { get; set; }
 
         [JsonProperty("NumberOfEmployees")]
         public string NumberOfEmployees { get; set; }
@@ -136,29 +136,29 @@ namespace Domain.Models
         [JsonProperty("ConfirmedExecutionStartTime")]
         public string ConfirmedExecutionStartTime { get; set; }
 
-        [JsonProperty("ConfirmedSetupEndDate")]
-        public string ConfirmedSetupEndDate { get; set; }
+        //[JsonProperty("ConfirmedSetupEndDate")]
+        //public string ConfirmedSetupEndDate { get; set; }
 
-        [JsonProperty("ConfirmedSetupEndTime")]
-        public string ConfirmedSetupEndTime { get; set; }
+        //[JsonProperty("ConfirmedSetupEndTime")]
+        //public string ConfirmedSetupEndTime { get; set; }
 
-        [JsonProperty("ConfirmedProcessingStartDate")]
-        public string ConfirmedProcessingStartDate { get; set; }
+        //[JsonProperty("ConfirmedProcessingStartDate")]
+        //public string ConfirmedProcessingStartDate { get; set; }
 
-        [JsonProperty("ConfirmedProcessingStartTime")]
-        public string ConfirmedProcessingStartTime { get; set; }
+        //[JsonProperty("ConfirmedProcessingStartTime")]
+        //public string ConfirmedProcessingStartTime { get; set; }
 
-        [JsonProperty("ConfirmedProcessingEndDate")]
-        public string ConfirmedProcessingEndDate { get; set; }
+        //[JsonProperty("ConfirmedProcessingEndDate")]
+        //public string ConfirmedProcessingEndDate { get; set; }
 
-        [JsonProperty("ConfirmedProcessingEndTime")]
-        public string ConfirmedProcessingEndTime { get; set; }
+        //[JsonProperty("ConfirmedProcessingEndTime")]
+        //public string ConfirmedProcessingEndTime { get; set; }
 
-        [JsonProperty("ConfirmedTeardownStartDate")]
-        public string ConfirmedTeardownStartDate { get; set; }
+        //[JsonProperty("ConfirmedTeardownStartDate")]
+        //public string ConfirmedTeardownStartDate { get; set; }
 
-        [JsonProperty("ConfirmedTeardownStartTime")]
-        public string ConfirmedTeardownStartTime { get; set; }
+        //[JsonProperty("ConfirmedTeardownStartTime")]
+        //public string ConfirmedTeardownStartTime { get; set; }
 
         [JsonProperty("ConfirmedExecutionEndDate")]
         public string ConfirmedExecutionEndDate { get; set; }
@@ -185,86 +185,86 @@ namespace Domain.Models
         public string VarianceReasonCode { get; set; }
 
         // Unidades de trabajo confirmadas (hasta 6)
-        [JsonProperty("OpWorkQuantityUnit1")]
-        public string OpWorkQuantityUnit1 { get; set; }
-        [JsonProperty("WorkQuantityUnit1ISOCode")]
-        public string WorkQuantityUnit1ISOCode { get; set; }
-        [JsonProperty("WorkQuantityUnit1SAPCode")]
-        public string WorkQuantityUnit1SAPCode { get; set; }
-        [JsonProperty("OpConfirmedWorkQuantity1")]
-        public string OpConfirmedWorkQuantity1 { get; set; }
-        [JsonProperty("NoFurtherOpWorkQuantity1IsExpd")]
-        public bool NoFurtherOpWorkQuantity1IsExpd { get; set; }
+        //[JsonProperty("OpWorkQuantityUnit1")]
+        //public string OpWorkQuantityUnit1 { get; set; }
+        //[JsonProperty("WorkQuantityUnit1ISOCode")]
+        //public string WorkQuantityUnit1ISOCode { get; set; }
+        //[JsonProperty("WorkQuantityUnit1SAPCode")]
+        //public string WorkQuantityUnit1SAPCode { get; set; }
+        //[JsonProperty("OpConfirmedWorkQuantity1")]
+        ////public string OpConfirmedWorkQuantity1 { get; set; }
+        //[JsonProperty("NoFurtherOpWorkQuantity1IsExpd")]
+        //public bool NoFurtherOpWorkQuantity1IsExpd { get; set; }
 
-        [JsonProperty("OpWorkQuantityUnit2")]
-        public string OpWorkQuantityUnit2 { get; set; }
-        [JsonProperty("WorkQuantityUnit2ISOCode")]
-        public string WorkQuantityUnit2ISOCode { get; set; }
-        [JsonProperty("WorkQuantityUnit2SAPCode")]
-        public string WorkQuantityUnit2SAPCode { get; set; }
-        [JsonProperty("OpConfirmedWorkQuantity2")]
-        public string OpConfirmedWorkQuantity2 { get; set; }
-        [JsonProperty("NoFurtherOpWorkQuantity2IsExpd")]
-        public bool NoFurtherOpWorkQuantity2IsExpd { get; set; }
+        //[JsonProperty("OpWorkQuantityUnit2")]
+        //public string OpWorkQuantityUnit2 { get; set; }
+        //[JsonProperty("WorkQuantityUnit2ISOCode")]
+        //public string WorkQuantityUnit2ISOCode { get; set; }
+        //[JsonProperty("WorkQuantityUnit2SAPCode")]
+        //public string WorkQuantityUnit2SAPCode { get; set; }
+        //[JsonProperty("OpConfirmedWorkQuantity2")]
+        //public string OpConfirmedWorkQuantity2 { get; set; }
+        //[JsonProperty("NoFurtherOpWorkQuantity2IsExpd")]
+        //public bool NoFurtherOpWorkQuantity2IsExpd { get; set; }
 
-        [JsonProperty("OpWorkQuantityUnit3")]
-        public string OpWorkQuantityUnit3 { get; set; }
-        [JsonProperty("WorkQuantityUnit3ISOCode")]
-        public string WorkQuantityUnit3ISOCode { get; set; }
-        [JsonProperty("WorkQuantityUnit3SAPCode")]
-        public string WorkQuantityUnit3SAPCode { get; set; }
-        [JsonProperty("OpConfirmedWorkQuantity3")]
-        public string OpConfirmedWorkQuantity3 { get; set; }
-        [JsonProperty("NoFurtherOpWorkQuantity3IsExpd")]
-        public bool NoFurtherOpWorkQuantity3IsExpd { get; set; }
+        //[JsonProperty("OpWorkQuantityUnit3")]
+        //public string OpWorkQuantityUnit3 { get; set; }
+        //[JsonProperty("WorkQuantityUnit3ISOCode")]
+        //public string WorkQuantityUnit3ISOCode { get; set; }
+        //[JsonProperty("WorkQuantityUnit3SAPCode")]
+        //public string WorkQuantityUnit3SAPCode { get; set; }
+        //[JsonProperty("OpConfirmedWorkQuantity3")]
+        //public string OpConfirmedWorkQuantity3 { get; set; }
+        //[JsonProperty("NoFurtherOpWorkQuantity3IsExpd")]
+        //public bool NoFurtherOpWorkQuantity3IsExpd { get; set; }
 
-        [JsonProperty("OpWorkQuantityUnit4")]
-        public string OpWorkQuantityUnit4 { get; set; }
-        [JsonProperty("WorkQuantityUnit4ISOCode")]
-        public string WorkQuantityUnit4ISOCode { get; set; }
-        [JsonProperty("WorkQuantityUnit4SAPCode")]
-        public string WorkQuantityUnit4SAPCode { get; set; }
-        [JsonProperty("OpConfirmedWorkQuantity4")]
-        public string OpConfirmedWorkQuantity4 { get; set; }
-        [JsonProperty("NoFurtherOpWorkQuantity4IsExpd")]
-        public bool NoFurtherOpWorkQuantity4IsExpd { get; set; }
+        //[JsonProperty("OpWorkQuantityUnit4")]
+        //public string OpWorkQuantityUnit4 { get; set; }
+        //[JsonProperty("WorkQuantityUnit4ISOCode")]
+        //public string WorkQuantityUnit4ISOCode { get; set; }
+        //[JsonProperty("WorkQuantityUnit4SAPCode")]
+        //public string WorkQuantityUnit4SAPCode { get; set; }
+        //[JsonProperty("OpConfirmedWorkQuantity4")]
+        //public string OpConfirmedWorkQuantity4 { get; set; }
+        //[JsonProperty("NoFurtherOpWorkQuantity4IsExpd")]
+        //public bool NoFurtherOpWorkQuantity4IsExpd { get; set; }
 
-        [JsonProperty("OpWorkQuantityUnit5")]
-        public string OpWorkQuantityUnit5 { get; set; }
-        [JsonProperty("WorkQuantityUnit5ISOCode")]
-        public string WorkQuantityUnit5ISOCode { get; set; }
-        [JsonProperty("WorkQuantityUnit5SAPCode")]
-        public string WorkQuantityUnit5SAPCode { get; set; }
-        [JsonProperty("OpConfirmedWorkQuantity5")]
-        public string OpConfirmedWorkQuantity5 { get; set; }
-        [JsonProperty("NoFurtherOpWorkQuantity5IsExpd")]
-        public bool NoFurtherOpWorkQuantity5IsExpd { get; set; }
+        //[JsonProperty("OpWorkQuantityUnit5")]
+        //public string OpWorkQuantityUnit5 { get; set; }
+        //[JsonProperty("WorkQuantityUnit5ISOCode")]
+        //public string WorkQuantityUnit5ISOCode { get; set; }
+        //[JsonProperty("WorkQuantityUnit5SAPCode")]
+        //public string WorkQuantityUnit5SAPCode { get; set; }
+        //[JsonProperty("OpConfirmedWorkQuantity5")]
+        //public string OpConfirmedWorkQuantity5 { get; set; }
+        //[JsonProperty("NoFurtherOpWorkQuantity5IsExpd")]
+        //public bool NoFurtherOpWorkQuantity5IsExpd { get; set; }
 
-        [JsonProperty("OpWorkQuantityUnit6")]
-        public string OpWorkQuantityUnit6 { get; set; }
-        [JsonProperty("WorkQuantityUnit6ISOCode")]
-        public string WorkQuantityUnit6ISOCode { get; set; }
-        [JsonProperty("WorkQuantityUnit6SAPCode")]
-        public string WorkQuantityUnit6SAPCode { get; set; }
-        [JsonProperty("OpConfirmedWorkQuantity6")]
-        public string OpConfirmedWorkQuantity6 { get; set; }
-        [JsonProperty("NoFurtherOpWorkQuantity6IsExpd")]
-        public bool NoFurtherOpWorkQuantity6IsExpd { get; set; }
+        //[JsonProperty("OpWorkQuantityUnit6")]
+        //public string OpWorkQuantityUnit6 { get; set; }
+        //[JsonProperty("WorkQuantityUnit6ISOCode")]
+        //public string WorkQuantityUnit6ISOCode { get; set; }
+        //[JsonProperty("WorkQuantityUnit6SAPCode")]
+        //public string WorkQuantityUnit6SAPCode { get; set; }
+        //[JsonProperty("OpConfirmedWorkQuantity6")]
+        //public string OpConfirmedWorkQuantity6 { get; set; }
+        //[JsonProperty("NoFurtherOpWorkQuantity6IsExpd")]
+        //public bool NoFurtherOpWorkQuantity6IsExpd { get; set; }
 
-        [JsonProperty("BusinessProcessEntryUnit")]
-        public string BusinessProcessEntryUnit { get; set; }
+        //[JsonProperty("BusinessProcessEntryUnit")]
+        //public string BusinessProcessEntryUnit { get; set; }
 
-        [JsonProperty("BusProcessEntrUnitISOCode")]
-        public string BusProcessEntrUnitISOCode { get; set; }
+        //[JsonProperty("BusProcessEntrUnitISOCode")]
+        //public string BusProcessEntrUnitISOCode { get; set; }
 
-        [JsonProperty("BusProcessEntryUnitSAPCode")]
-        public string BusProcessEntryUnitSAPCode { get; set; }
+        //[JsonProperty("BusProcessEntryUnitSAPCode")]
+        //public string BusProcessEntryUnitSAPCode { get; set; }
 
-        [JsonProperty("BusinessProcessConfirmedQty")]
-        public string BusinessProcessConfirmedQty { get; set; }
+        //[JsonProperty("BusinessProcessConfirmedQty")]
+        //public string BusinessProcessConfirmedQty { get; set; }
 
-        [JsonProperty("NoFurtherBusinessProcQtyIsExpd")]
-        public bool NoFurtherBusinessProcQtyIsExpd { get; set; }
+        //[JsonProperty("NoFurtherBusinessProcQtyIsExpd")]
+        //public bool NoFurtherBusinessProcQtyIsExpd { get; set; }
 
         [JsonProperty("to_ProcOrdConfMatlDocItm")]
         public MaterialDocumentItemResults ToProcOrdConfMatlDocItm { get; set; }
@@ -278,14 +278,14 @@ namespace Domain.Models
 
     public class MaterialDocumentItem
     {
-        [JsonProperty("OrderType")]
-        public string OrderType { get; set; }
+        //[JsonProperty("OrderType")]
+        //public string OrderType { get; set; }
 
         [JsonProperty("OrderID")]
         public string OrderID { get; set; }
 
-        [JsonProperty("OrderItem")]
-        public string OrderItem { get; set; }
+        //[JsonProperty("OrderItem")]
+        //public string OrderItem { get; set; }
 
         [JsonProperty("ManufacturingOrderCategory")]
         public string ManufacturingOrderCategory { get; set; }
@@ -305,44 +305,44 @@ namespace Domain.Models
         [JsonProperty("StorageLocation")]
         public string StorageLocation { get; set; }
 
-        [JsonProperty("ProductionSupplyArea")]
-        public string ProductionSupplyArea { get; set; }
+        //[JsonProperty("ProductionSupplyArea")]
+        //public string ProductionSupplyArea { get; set; }
 
         [JsonProperty("Batch")]
         public string Batch { get; set; }
 
-        [JsonProperty("InventoryValuationType")]
-        public string InventoryValuationType { get; set; }
+        //[JsonProperty("InventoryValuationType")]
+        //public string InventoryValuationType { get; set; }
 
         [JsonProperty("GoodsMovementType")]
         public string GoodsMovementType { get; set; }
 
-        [JsonProperty("GoodsMovementReasonCode")]
-        public string GoodsMovementReasonCode { get; set; }
+        //[JsonProperty("GoodsMovementReasonCode")]
+        //public string GoodsMovementReasonCode { get; set; }
 
-        [JsonProperty("GoodsMovementRefDocType")]
-        public string GoodsMovementRefDocType { get; set; }
+        //[JsonProperty("GoodsMovementRefDocType")]
+        //public string GoodsMovementRefDocType { get; set; }
 
-        [JsonProperty("InventoryUsabilityCode")]
-        public string InventoryUsabilityCode { get; set; }
+        //[JsonProperty("InventoryUsabilityCode")]
+        //public string InventoryUsabilityCode { get; set; }
 
-        [JsonProperty("InventorySpecialStockType")]
-        public string InventorySpecialStockType { get; set; }
+        //[JsonProperty("InventorySpecialStockType")]
+        //public string InventorySpecialStockType { get; set; }
 
-        [JsonProperty("SalesOrder")]
-        public string SalesOrder { get; set; }
+        //[JsonProperty("SalesOrder")]
+        //public string SalesOrder { get; set; }
 
-        [JsonProperty("SalesOrderItem")]
-        public string SalesOrderItem { get; set; }
+        //[JsonProperty("SalesOrderItem")]
+        //public string SalesOrderItem { get; set; }
 
-        [JsonProperty("WBSElementExternalID")]
-        public string WBSElementExternalID { get; set; }
+        //[JsonProperty("WBSElementExternalID")]
+        //public string WBSElementExternalID { get; set; }
 
-        [JsonProperty("Supplier")]
-        public string Supplier { get; set; }
+        //[JsonProperty("Supplier")]
+        //public string Supplier { get; set; }
 
-        [JsonProperty("Customer")]
-        public string Customer { get; set; }
+        //[JsonProperty("Customer")]
+        //public string Customer { get; set; }
 
         [JsonProperty("ReservationIsFinallyIssued")]
         public bool ReservationIsFinallyIssued { get; set; }
@@ -356,20 +356,20 @@ namespace Domain.Models
         [JsonProperty("ManufactureDate")]
         public string ManufactureDate { get; set; }
 
-        [JsonProperty("StorageType")]
-        public string StorageType { get; set; }
+        //[JsonProperty("StorageType")]
+        //public string StorageType { get; set; }
 
-        [JsonProperty("StorageBin")]
-        public string StorageBin { get; set; }
+        //[JsonProperty("StorageBin")]
+        //public string StorageBin { get; set; }
 
-        [JsonProperty("EWMWarehouse")]
-        public string EWMWarehouse { get; set; }
+        //[JsonProperty("EWMWarehouse")]
+        //public string EWMWarehouse { get; set; }
 
-        [JsonProperty("EWMStorageBin")]
-        public string EWMStorageBin { get; set; }
+        //[JsonProperty("EWMStorageBin")]
+        //public string EWMStorageBin { get; set; }
 
-        [JsonProperty("MaterialDocumentItemText")]
-        public string MaterialDocumentItemText { get; set; }
+        //[JsonProperty("MaterialDocumentItemText")]
+        //public string MaterialDocumentItemText { get; set; }
 
         [JsonProperty("EntryUnit")]
         public string EntryUnit { get; set; }
@@ -395,10 +395,10 @@ namespace Domain.Models
 
     public class BatchCharacteristic
     {
-        [JsonProperty("Characteristic")]
-        public string Characteristic { get; set; }
+        //[JsonProperty("Characteristic")]
+        //public string Characteristic { get; set; }
 
-        [JsonProperty("CharcValue")]
-        public string CharcValue { get; set; }
+        //[JsonProperty("CharcValue")]
+        //public string CharcValue { get; set; }
     }
 }

@@ -4,16 +4,8 @@ using System.Reflection;
 
 namespace Infrastructure.Persistence
 {
-    public class ApplicationDbContext : DbContext
+    public class SapScada1DbContext(DbContextOptions<SapScadaMainDbContext> options) : DbContext(options)
     {
-        public ApplicationDbContext()
-        {
-        }
-
-        public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options)
-            : base(options)
-        {
-        }
         public virtual DbSet<CommStatus> CommStatuses { get; set; }
 
         public virtual DbSet<ProcessOrder> ProcessOrders { get; set; }

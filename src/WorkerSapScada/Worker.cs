@@ -1,5 +1,5 @@
-using Application.UseCases.Operation.Commands.Create;
-using Application.UseCases.Operation.Commands.Update;
+using Application.UseCases.Operation.SendConfirm;
+using Application.UseCases.Operation.SendToScada;
 using HostWorker.Models;
 using MediatR;
 
@@ -27,17 +27,24 @@ public class Worker : BackgroundService
         while (!stoppingToken.IsCancellationRequested)
         {
             var scopedService = scope.ServiceProvider.GetRequiredService<IScopedService>();
-            await scopedService.Create();
-            await Task.Delay(TimeSpan.FromSeconds(5), stoppingToken);
+
+            await scopedService.SendConfirm("SapScada1");
+            await Task.Delay(TimeSpan.FromSeconds(delayTime), stoppingToken);
+
+            await scopedService.SendConfirm("SapScada1");
+            await Task.Delay(TimeSpan.FromSeconds(delayTime), stoppingToken);
+
+            await scopedService.SendToScada("SapScadaMain");
+            await Task.Delay(TimeSpan.FromSeconds(delayTime), stoppingToken);
         }
     }
 }
 
 public interface IScopedService
 {
-    Task<bool> Create();
+    Task<bool> SendConfirm(string DbChoice);
 
-    Task<bool> Update();
+    Task<bool> SendToScada(string DbChoice);
 }
 
 public class ScopedService : BaseApiController, IScopedService
@@ -51,15 +58,15 @@ public class ScopedService : BaseApiController, IScopedService
         _mediator = mediator;
     }
 
-    public async Task<bool> Create()
+    public async Task<bool> SendConfirm(string DbChoice)
     {
-        var result = await _mediator.Send(new CreateCommand() { });
+        var result = await _mediator.Send(new SendConfirmRequest() { DbChoice = DbChoice });
         return result.Content.Result;
     }
 
-    public async Task<bool> Update()
+    public async Task<bool> SendToScada(string DbChoice)
     {
-        var result = await _mediator.Send(new UpdateCommand() { });
+        var result = await _mediator.Send(new SendToScadaRequest() { DbChoice = DbChoice });
         return result.Content.Result;
     }
 }

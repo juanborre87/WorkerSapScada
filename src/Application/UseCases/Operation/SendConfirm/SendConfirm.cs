@@ -1,70 +1,73 @@
 ﻿using Application.Helpers;
 using Application.Interfaces;
+using Arq.Core;
 using Domain.Entities;
 using HostWorker.Models;
 using MediatR;
 using Microsoft.Extensions.Configuration;
 using System.Net;
 
-namespace Application.UseCases.Operation.Commands.Create;
+namespace Application.UseCases.Operation.SendConfirm;
 
-public class CreateCommand : IRequest<Response<CreateResponse>>
+public class SendConfirmRequest : IRequest<Response<SendConfirmResponse>>
 {
+    public string DbChoice { get; set; }
 }
 
-public class CreateCommandHandler(
-    IQuerySqlDB<ProcessOrderConfirmation> processOrderConfirmationQuerySqlDB,
-    IQuerySqlDB<ProcessOrderConfirmationMaterialMovement> materialMovementQuerySqlDB,
-    IQuerySqlDB<ProcessOrder> processOrderQuerySqlDB,
-    IQuerySqlDB<ProcessOrderComponent> processOrderComponentQuerySqlDB,
-    ICommandSqlDB<ProcessOrderConfirmation> processOrderCommandSqlDB,
+public class SendConfirmHandler(
+    IQuerySqlDb<ProcessOrderConfirmation> processOrderConfirmationQuerySqlDB,
+    IQuerySqlDb<ProcessOrderConfirmationMaterialMovement> materialMovementQuerySqlDB,
+    IQuerySqlDb<ProcessOrder> processOrderQuerySqlDB,
+    IQuerySqlDb<ProcessOrderComponent> processOrderComponentQuerySqlDB,
+    ICommandSqlDb<ProcessOrderConfirmation> processOrderCommandSqlDB,
     ISapOrderService sapOrderService,
     IConfiguration configuration) :
-    IRequestHandler<CreateCommand, Response<CreateResponse>>
+    IRequestHandler<SendConfirmRequest, Response<SendConfirmResponse>>
 {
-    public async Task<Response<CreateResponse>> Handle(CreateCommand request, CancellationToken cancellationToken)
+    public async Task<Response<SendConfirmResponse>> Handle(SendConfirmRequest request, CancellationToken cancellationToken)
     {
 
         try
         {
             var confirmation = await processOrderConfirmationQuerySqlDB.FirstOrDefaultIncludeAsync(
                 nameof(ProcessOrderConfirmation.Order),
-                x => x.CommStatus == 1);
+                x => x.CommStatus == 1, request.DbChoice);
 
             if (confirmation == null)
             {
-                return new Response<CreateResponse>
+                return new Response<SendConfirmResponse>
                 {
                     StatusCode = HttpStatusCode.NotFound,
-                    Content = new CreateResponse { Result = false, Message = "No confirmation found." }
+                    Content = new SendConfirmResponse { Result = false, Message = "No confirmation found." }
                 };
             }
 
             var movements = await materialMovementQuerySqlDB.WhereIncludeAsync(
                 nameof(ProcessOrderConfirmationMaterialMovement.ProcessOrderComponent),
-                x => x.ProcessOrderConfirmationId == confirmation.Id);
+                x => x.ProcessOrderConfirmationId == confirmation.Id, request.DbChoice);
 
             if (movements == null)
             {
-                return new Response<CreateResponse>
+                return new Response<SendConfirmResponse>
                 {
                     StatusCode = HttpStatusCode.NotFound,
-                    Content = new CreateResponse { Result = false, Message = "No materialMovement found." }
+                    Content = new SendConfirmResponse { Result = false, Message = "No materialMovement found." }
                 };
             }
 
             var sapRequest = SapConfirmationMapper.MapToDto(confirmation, movements);
             //sapRequest.EnteredByUser = "DSALAZAR";
             var result = await sapOrderService.SendOrderConfirmationAsync(sapRequest);
+            if (result)
+            {
+                //confirmation.CommStatus = 2;
+                //await processOrderCommandSqlDB.UpdateAsync(confirmation, request.DbChoice);
+            }
 
-
-            //confirmation.CommStatus = 2;
-            //await processOrderCommandSqlDB.UpdateAsync(confirmation);
-
-            return new Response<CreateResponse>
+            return new Response<SendConfirmResponse>
             {
                 StatusCode = result ? HttpStatusCode.OK : HttpStatusCode.BadRequest,
-                Content = new CreateResponse
+                Content = new SendConfirmResponse
                 {
                     Result = result,
                     Message = result ? "Confirmation sent to SAP." : "Failed to send confirmation to SAP."
@@ -73,10 +76,10 @@ public class CreateCommandHandler(
         }
         catch (Exception ex)
         {
-            return new Response<CreateResponse>
+            return new Response<SendConfirmResponse>
             {
                 StatusCode = HttpStatusCode.InternalServerError,
-                Content = new CreateResponse
+                Content = new SendConfirmResponse
                 {
                     Result = false,
                     Message = $"Error: {ex.Message}"
