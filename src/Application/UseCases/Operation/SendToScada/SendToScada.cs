@@ -13,8 +13,10 @@ public class SendToScadaRequest : IRequest<Response<SendToScadaResponse>>
 
 public class SendToScadaHandler(
     IQuerySqlDb<ProcessOrder> processOrderQuerySqlDB,
-    ICommandSqlDb<ProcessOrder> processOrderCommandSqlDB,
     IQuerySqlDb<ProcessOrderComponent> processOrderComponentQuerySqlDB,
+    IQuerySqlDb<Product> productQuerySqlDB,
+    ICommandSqlDb<Product> productCommandSqlDb,
+    ICommandSqlDb<ProcessOrder> processOrderCommandSqlDB,
     ICommandSqlDb<ProcessOrderComponent> processOrderComponentCommandSqlDB) :
     IRequestHandler<SendToScadaRequest, Response<SendToScadaResponse>>
 {
@@ -23,16 +25,23 @@ public class SendToScadaHandler(
 
         try
         {
-            var DestinoDb = string.Empty;
+            var targetDb = string.Empty;
             var processOrder = await processOrderQuerySqlDB.FirstOrDefaultAsync(x => x.CommStatus == 0, request.DbChoice);
             if (processOrder != null)
             {
                 var components = await processOrderComponentQuerySqlDB.WhereAsync(x => x.ManufacturingOrder == processOrder.ManufacturingOrder, request.DbChoice);
 
                 if (processOrder.DestinoRecetaDeControl == 10)
-                    DestinoDb = "SapScada1";
+                {
+                    targetDb = "SapScada1";
+                    var result = await SyncProductsAsync(request.DbChoice, targetDb);
+                }
+
                 if (processOrder.DestinoRecetaDeControl == 20)
-                    DestinoDb = "SapScada2";
+                {
+                    targetDb = "SapScada2";
+                    var result = await SyncProductsAsync(request.DbChoice, targetDb);
+                }
                 else
                 {
                     return new Response<SendToScadaResponse>
@@ -46,10 +55,10 @@ public class SendToScadaHandler(
                     };
                 }
 
-                await processOrderCommandSqlDB.AddAsync(processOrder, DestinoDb);
+                await processOrderCommandSqlDB.AddAsync(processOrder, targetDb);
                 foreach (var component in components)
                 {
-                    await processOrderComponentCommandSqlDB.AddAsync(component, DestinoDb);
+                    await processOrderComponentCommandSqlDB.AddAsync(component, targetDb);
                 }
 
                 processOrder.CommStatus = 2;
@@ -62,7 +71,7 @@ public class SendToScadaHandler(
                 Content = new SendToScadaResponse
                 {
                     Result = true,
-                    Message = $"Confirmation sent to {DestinoDb}"
+                    Message = $"Confirmation sent to {targetDb}"
                 }
             };
         }
@@ -79,6 +88,29 @@ public class SendToScadaHandler(
             };
         }
 
+    }
+
+    public async Task<int> SyncProductsAsync(string SourceDb, string TargetDb)
+    {
+        var sourceProducts = await productQuerySqlDB.ListAllAsync(SourceDb);
+        var targetProducts = await productQuerySqlDB.ListAllAsync(TargetDb);
+
+        // Aquí asumimos que se comparan por el campo "Codigo"
+        var targetCodes = new HashSet<string>(sourceProducts.Select(m => m.ProductCode));
+
+        // Filtrar los materiales faltantes
+        var missingProducts = sourceProducts
+            .Where(m => !targetCodes.Contains(m.ProductCode))
+            .ToList();
+
+        // Insertar los materiales faltantes en la tabla de destino
+        foreach (var product in missingProducts)
+        {
+            await productCommandSqlDb.AddAsync(product, TargetDb);
+        }
+
+        // Retornar la cantidad de materiales insertados
+        return missingProducts.Count;
     }
 
 }

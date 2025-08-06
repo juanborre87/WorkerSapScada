@@ -63,5 +63,36 @@ namespace Arq.Cqrs
             }
         }
 
+        public virtual async Task<List<T>> IncludeAllAsync(string navigationPropertyPath, string databaseChoice, bool tracking = true)
+        {
+            try
+            {
+                var _entity = dbContextProvider.GetDbSet<T>(databaseChoice);
+
+                return tracking
+                    ? await _entity.Include(navigationPropertyPath).ToListAsync()
+                    : await _entity.Include(navigationPropertyPath).AsNoTracking().ToListAsync();
+            }
+            catch
+            {
+                throw;
+            }
+        }
+
+        public virtual async Task<List<T>> ListAllAsync(string databaseChoice, bool tracking = true)
+        {
+            try
+            {
+                var _entity = dbContextProvider.GetDbSet<T>(databaseChoice);
+
+                return tracking
+                    ? await _entity.ToListAsync()
+                    : await _entity.AsNoTracking().ToListAsync();
+            }
+            catch
+            {
+                throw;
+            }
+        }
     }
 }
