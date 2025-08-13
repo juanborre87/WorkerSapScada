@@ -70,20 +70,16 @@ public class SendConfirmToDbMainHandler(
             try
             {
                 await processOrderConfirmationCommandSqlDB.AddToTransactionAsync(confirmation, "SapScadaMain");
-                //foreach (var movement in movements)
-                //{
-                //    var newMovement = Clone.WithoutId(movement);
-                //    await materialMovementCommandSqlDB.AddToTransactionAsync(newMovement, "SapScadaMain");
-                //}
+
                 var clonedMovements = movements
                     .Select(m => Clone.WithoutId(m))
                     .ToList();
-                await materialMovementCommandSqlDB.AddRangeToTransactionAsync(movements, "SapScadaMain");
-
-                confirmation.CommStatus = 2;
-                await processOrderConfirmationCommandSqlDB.UpdateToTransactionAsync(confirmation, request.DbChoice);
+                await materialMovementCommandSqlDB.AddRangeToTransactionAsync(clonedMovements, "SapScadaMain");
 
                 await uow.CommitAsync();
+
+                confirmation.CommStatus = 2;
+                await processOrderConfirmationCommandSqlDB.UpdateAsync(confirmation, request.DbChoice);
 
                 await logger.LogInfoAsync("Adicion exitosa de la confirmacion y movimientos de materiales",
                     "Metodo: SendConfirmToDbMainHandler");
