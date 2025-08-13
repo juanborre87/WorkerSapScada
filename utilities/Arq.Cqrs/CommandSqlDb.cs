@@ -102,6 +102,21 @@ namespace Arq.Cqrs
 
         }
 
+        public async Task AddRangeToTransactionAsync(IEnumerable<T> entities, string dbChoice)
+        {
+            try
+            {
+                var ctx = dbContextProvider.GetDbContext(dbChoice);
+                await ctx.Set<T>().AddRangeAsync(entities);
+            }
+            catch (Exception ex)
+            {
+                var sqlMessage = ex.InnerException?.Message ?? ex.Message;
+                throw new Exception(sqlMessage);
+            }
+
+        }
+
         public async Task<int> SaveChangesAsync(string dbChoice)
         {
             try

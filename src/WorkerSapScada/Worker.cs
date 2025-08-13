@@ -31,11 +31,11 @@ public class Worker : BackgroundService
 
             try
             {
-                await scopedService.OrderToDbScada("SapScadaMain");
-                await Task.Delay(TimeSpan.FromSeconds(delayTime), stoppingToken);
+                //await scopedService.OrderToDbScada("SapScadaMain");
+                //await Task.Delay(TimeSpan.FromSeconds(delayTime), stoppingToken);
 
-                await scopedService.ConfirmToDbMain("SapScada1");
-                await Task.Delay(TimeSpan.FromSeconds(delayTime), stoppingToken);
+                //await scopedService.ConfirmToDbMain("SapScada1");
+                //await Task.Delay(TimeSpan.FromSeconds(delayTime), stoppingToken);
 
                 await scopedService.ConfirmToDbMain("SapScada2");
                 await Task.Delay(TimeSpan.FromSeconds(delayTime), stoppingToken);

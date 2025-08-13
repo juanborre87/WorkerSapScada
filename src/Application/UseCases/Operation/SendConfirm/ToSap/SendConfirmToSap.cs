@@ -53,7 +53,7 @@ public class SendConfirmToSapHandler(
                 .WhereIncludeAsync(nameof(ProcessOrderConfirmationMaterialMovement.ProcessOrderComponent),
                 x => x.ProcessOrderConfirmationId == confirmation.Id, request.DbChoice, false);
 
-            if (movements == null)
+            if (movements.Count == 0)
             {
                 await logger.LogInfoAsync($"No se encontró movimiento de material en la confirmacion: {confirmation.Id}",
                     "Metodo: SendConfirmToSapHandler");

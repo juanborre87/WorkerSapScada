@@ -1,4 +1,5 @@
-﻿using Application.Interfaces;
+﻿using Application.Helpers;
+using Application.Interfaces;
 using Arq.Core;
 using Arq.Host;
 using Domain.Entities;
@@ -49,7 +50,7 @@ public class SendConfirmToDbMainHandler(
             var movements = await materialMovementQuerySqlDB
                 .WhereAsync(x => x.ProcessOrderConfirmationId == confirmation.Id, request.DbChoice, false);
 
-            if (movements == null)
+            if (movements.Count == 0)
             {
                 await logger.LogInfoAsync($"No se encontró movimiento de material en la confirmación: {confirmation.Id}", 
                     "Metodo: SendConfirmToDbMainHandler");
@@ -69,10 +70,15 @@ public class SendConfirmToDbMainHandler(
             try
             {
                 await processOrderConfirmationCommandSqlDB.AddToTransactionAsync(confirmation, "SapScadaMain");
-                foreach (var movement in movements)
-                {
-                    await materialMovementCommandSqlDB.AddToTransactionAsync(movement, "SapScadaMain");
-                }
+                //foreach (var movement in movements)
+                //{
+                //    var newMovement = Clone.WithoutId(movement);
+                //    await materialMovementCommandSqlDB.AddToTransactionAsync(newMovement, "SapScadaMain");
+                //}
+                var clonedMovements = movements
+                    .Select(m => Clone.WithoutId(m))
+                    .ToList();
+                await materialMovementCommandSqlDB.AddRangeToTransactionAsync(movements, "SapScadaMain");
 
                 confirmation.CommStatus = 2;
                 await processOrderConfirmationCommandSqlDB.UpdateToTransactionAsync(confirmation, request.DbChoice);
