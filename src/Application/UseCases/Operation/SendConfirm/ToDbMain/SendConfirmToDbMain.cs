@@ -30,7 +30,7 @@ public class SendConfirmToDbMainHandler(
         try
         {
             var confirmation = await processOrderConfirmationQuerySqlDB
-                .FirstOrDefaultAsync(x => x.CommStatus == 1, request.DbChoice, true);
+                .FirstOrDefaultAsync(x => x.CommStatus == 1, request.DbChoice, false);
 
             if (confirmation == null)
             {
@@ -77,24 +77,10 @@ public class SendConfirmToDbMainHandler(
                 await materialMovementCommandSqlDB.AddRangeToTransactionAsync(clonedMovements, "SapScadaMain");
 
                 await uow.CommitAsync();
-
-                confirmation.CommStatus = 2;
-                await processOrderConfirmationCommandSqlDB.UpdateAsync(confirmation, request.DbChoice);
-
                 await logger.LogInfoAsync("Adicion exitosa de la confirmacion y movimientos de materiales",
                     "Metodo: SendConfirmToDbMainHandler");
-                await logger.LogInfoAsync("Actualizacion exitosa de la confirmacion CommStatus = 2",
-                    "Metodo: SendConfirmToDbMainHandler");
+                uow.Dispose();
 
-                return new Response<SendConfirmToDbMainResponse>
-                {
-                    StatusCode = HttpStatusCode.OK,
-                    Content = new SendConfirmToDbMainResponse
-                    {
-                        Result = true,
-                        Message = string.Empty
-                    }
-                };
             }
             catch (Exception ex)
             {
@@ -111,6 +97,22 @@ public class SendConfirmToDbMainHandler(
                     }
                 };
             }
+
+            confirmation.CommStatus = 2;
+            await processOrderConfirmationCommandSqlDB.UpdateAsync(confirmation, request.DbChoice);
+
+            await logger.LogInfoAsync("Actualizacion exitosa de la confirmacion CommStatus = 2",
+                "Metodo: SendConfirmToDbMainHandler");
+
+            return new Response<SendConfirmToDbMainResponse>
+            {
+                StatusCode = HttpStatusCode.OK,
+                Content = new SendConfirmToDbMainResponse
+                {
+                    Result = true,
+                    Message = string.Empty
+                }
+            };
 
         }
         catch (Exception ex)
