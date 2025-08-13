@@ -1,50 +1,120 @@
 ﻿using Arq.Core;
+using Arq.Cqrs.Interfaces;
 using Microsoft.EntityFrameworkCore;
 
 namespace Arq.Cqrs
 {
     public class CommandSqlDb<T>(IDbContextProvider dbContextProvider) : ICommandSqlDb<T> where T : class
     {
-        public virtual async Task<T> AddAsync(T entity, string databaseChoice)
+
+        public async Task<T> AddAsync(T entity, string dbChoice)
         {
             try
             {
-                var dbSet = dbContextProvider.GetDbSet<T>(databaseChoice);
-                await dbSet.AddAsync(entity);
-                await dbContextProvider.SaveChangesAsync(databaseChoice);
+                var ctx = dbContextProvider.GetDbContext(dbChoice);
+                await ctx.Set<T>().AddAsync(entity);
+                await ctx.SaveChangesAsync();
                 return entity;
             }
-            catch
+            catch (Exception ex)
             {
-                throw;
+                var sqlMessage = ex.InnerException?.Message ?? ex.Message;
+                throw new Exception(sqlMessage);
             }
+
         }
 
-        public virtual async Task DeleteAsync(T entity, string databaseChoice)
+        public async Task AddRangeAsync(IEnumerable<T> entities, string dbChoice)
         {
             try
             {
-                var entry = dbContextProvider.GetDbSet<T>(databaseChoice).Remove(entity);
-                await dbContextProvider.SaveChangesAsync(databaseChoice);
+                var ctx = dbContextProvider.GetDbContext(dbChoice);
+                await ctx.Set<T>().AddRangeAsync(entities);
+                await ctx.SaveChangesAsync();
             }
-            catch
+            catch (Exception ex)
             {
-                throw;
+                var sqlMessage = ex.InnerException?.Message ?? ex.Message;
+                throw new Exception(sqlMessage);
             }
+
         }
 
-        public virtual async Task UpdateAsync(T entity, string databaseChoice)
+        public async Task UpdateAsync(T entity, string dbChoice)
         {
             try
             {
-                var entry = dbContextProvider.GetDbSet<T>(databaseChoice).Remove(entity);
-                entry.State = EntityState.Modified;
-                await dbContextProvider.SaveChangesAsync(databaseChoice);
+                var ctx = dbContextProvider.GetDbContext(dbChoice);
+                ctx.Set<T>().Update(entity);
+                await ctx.SaveChangesAsync();
             }
-            catch
+            catch (Exception ex)
             {
-                throw;
+                var sqlMessage = ex.InnerException?.Message ?? ex.Message;
+                throw new Exception(sqlMessage);
             }
+
+        }
+
+        public async Task DeleteAsync(T entity, string dbChoice)
+        {
+            try
+            {
+                var ctx = dbContextProvider.GetDbContext(dbChoice);
+                ctx.Set<T>().Remove(entity);
+                await ctx.SaveChangesAsync();
+            }
+            catch (Exception ex)
+            {
+                var sqlMessage = ex.InnerException?.Message ?? ex.Message;
+                throw new Exception(sqlMessage);
+            }
+
+        }
+
+        public async Task AddToTransactionAsync(T entity, string dbChoice)
+        {
+            try
+            {
+                var ctx = dbContextProvider.GetDbContext(dbChoice);
+                await ctx.Set<T>().AddAsync(entity);
+            }
+            catch (Exception ex)
+            {
+                var sqlMessage = ex.InnerException?.Message ?? ex.Message;
+                throw new Exception(sqlMessage);
+            }
+
+        }
+
+        public async Task UpdateToTransactionAsync(T entity, string dbChoice)
+        {
+            try
+            {
+                var ctx = dbContextProvider.GetDbContext(dbChoice);
+                ctx.Set<T>().Update(entity);
+            }
+            catch (Exception ex)
+            {
+                var sqlMessage = ex.InnerException?.Message ?? ex.Message;
+                throw new Exception(sqlMessage);
+            }
+
+        }
+
+        public async Task<int> SaveChangesAsync(string dbChoice)
+        {
+            try
+            {
+                var ctx = dbContextProvider.GetDbContext(dbChoice);
+                return await ctx.SaveChangesAsync();
+            }
+            catch (Exception ex)
+            {
+                var sqlMessage = ex.InnerException?.Message ?? ex.Message;
+                throw new Exception(sqlMessage);
+            }
+
         }
 
     }

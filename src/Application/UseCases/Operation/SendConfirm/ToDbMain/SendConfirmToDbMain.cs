@@ -1,0 +1,131 @@
+﻿using Application.Interfaces;
+using Arq.Core;
+using Arq.Host;
+using Domain.Entities;
+using MediatR;
+using Microsoft.Extensions.Configuration;
+using System.Net;
+
+namespace Application.UseCases.Operation.SendConfirm.ToDbMain;
+
+public class SendConfirmToDbMain : IRequest<Response<SendConfirmToDbMainResponse>>
+{
+    public string DbChoice { get; set; }
+}
+
+public class SendConfirmToDbMainHandler(
+    IUnitOfWork uow,
+    IFileLogger logger,
+    IQuerySqlDb<ProcessOrderConfirmation> processOrderConfirmationQuerySqlDB,
+    IQuerySqlDb<ProcessOrderConfirmationMaterialMovement> materialMovementQuerySqlDB,
+    ICommandSqlDb<ProcessOrderConfirmation> processOrderConfirmationCommandSqlDB,
+    ICommandSqlDb<ProcessOrderConfirmationMaterialMovement> materialMovementCommandSqlDB,
+    IConfiguration configuration) :
+    IRequestHandler<SendConfirmToDbMain, Response<SendConfirmToDbMainResponse>>
+{
+    public async Task<Response<SendConfirmToDbMainResponse>> Handle(SendConfirmToDbMain request, CancellationToken cancellationToken)
+    {
+
+        try
+        {
+            var confirmation = await processOrderConfirmationQuerySqlDB
+                .FirstOrDefaultAsync(x => x.CommStatus == 1, request.DbChoice, true);
+
+            if (confirmation == null)
+            {
+                await logger.LogInfoAsync($"No se encontró confirmación en la Db: {request.DbChoice}",
+                    "Metodo: SendConfirmToDbMainHandler");
+                return new Response<SendConfirmToDbMainResponse>
+                {
+                    StatusCode = HttpStatusCode.NotFound,
+                    Content = new SendConfirmToDbMainResponse
+                    {
+                        Result = false,
+                        Message = $"No se encontró confirmación en la Db: {request.DbChoice}"
+                    }
+                };
+            }
+
+            var movements = await materialMovementQuerySqlDB
+                .WhereAsync(x => x.ProcessOrderConfirmationId == confirmation.Id, request.DbChoice, false);
+
+            if (movements == null)
+            {
+                await logger.LogInfoAsync($"No se encontró movimiento de material en la confirmación: {confirmation.Id}", 
+                    "Metodo: SendConfirmToDbMainHandler");
+                return new Response<SendConfirmToDbMainResponse>
+                {
+                    StatusCode = HttpStatusCode.NotFound,
+                    Content = new SendConfirmToDbMainResponse
+                    {
+                        Result = false,
+                        Message = string.Empty
+                    }
+                };
+            }
+
+            await uow.BeginTransactionAsync("SapScadaMain");
+
+            try
+            {
+                await processOrderConfirmationCommandSqlDB.AddToTransactionAsync(confirmation, "SapScadaMain");
+                foreach (var movement in movements)
+                {
+                    await materialMovementCommandSqlDB.AddToTransactionAsync(movement, "SapScadaMain");
+                }
+
+                confirmation.CommStatus = 2;
+                await processOrderConfirmationCommandSqlDB.UpdateToTransactionAsync(confirmation, request.DbChoice);
+
+                await uow.CommitAsync();
+
+                await logger.LogInfoAsync("Adicion exitosa de la confirmacion y movimientos de materiales",
+                    "Metodo: SendConfirmToDbMainHandler");
+                await logger.LogInfoAsync("Actualizacion exitosa de la confirmacion CommStatus = 2",
+                    "Metodo: SendConfirmToDbMainHandler");
+
+                return new Response<SendConfirmToDbMainResponse>
+                {
+                    StatusCode = HttpStatusCode.OK,
+                    Content = new SendConfirmToDbMainResponse
+                    {
+                        Result = true,
+                        Message = string.Empty
+                    }
+                };
+            }
+            catch (Exception ex)
+            {
+                await uow.RollbackAsync();
+                await logger.LogErrorAsync($"Error al guardar la confirmación: {ex.Message}", 
+                    "Metodo: SendConfirmToDbMainHandler");
+                return new Response<SendConfirmToDbMainResponse>
+                {
+                    StatusCode = HttpStatusCode.InternalServerError,
+                    Content = new SendConfirmToDbMainResponse
+                    {
+                        Result = false,
+                        Message = string.Empty
+                    }
+                };
+            }
+
+        }
+        catch (Exception ex)
+        {
+            await logger.LogErrorAsync($"Error: {ex.Message}",
+                "Metodo: SendConfirmToDbMainHandler");
+            return new Response<SendConfirmToDbMainResponse>
+            {
+                StatusCode = HttpStatusCode.InternalServerError,
+                Content = new SendConfirmToDbMainResponse
+                {
+                    Result = false,
+                    Message = $"Error: {ex.Message}"
+                }
+            };
+        }
+
+    }
+
+}

@@ -1,6 +1,7 @@
-using Application.UseCases.Operation.SendConfirm;
-using Application.UseCases.Operation.SendToScada;
-using HostWorker.Models;
+using Application.UseCases.Operation.SendConfirm.ToDbMain;
+using Application.UseCases.Operation.SendConfirm.ToSap;
+using Application.UseCases.Operation.SendOrder.ToDbScada;
+using Arq.Host;
 using MediatR;
 
 namespace WorkerSapScada;
@@ -28,23 +29,50 @@ public class Worker : BackgroundService
         {
             var scopedService = scope.ServiceProvider.GetRequiredService<IScopedService>();
 
-            await scopedService.SendConfirm("SapScada1");
-            await Task.Delay(TimeSpan.FromSeconds(delayTime), stoppingToken);
+            try
+            {
+                await scopedService.OrderToDbScada("SapScadaMain");
+                await Task.Delay(TimeSpan.FromSeconds(delayTime), stoppingToken);
 
-            await scopedService.SendConfirm("SapScada1");
-            await Task.Delay(TimeSpan.FromSeconds(delayTime), stoppingToken);
+                await scopedService.ConfirmToDbMain("SapScada1");
+                await Task.Delay(TimeSpan.FromSeconds(delayTime), stoppingToken);
 
-            await scopedService.SendToScada("SapScadaMain");
-            await Task.Delay(TimeSpan.FromSeconds(delayTime), stoppingToken);
+                await scopedService.ConfirmToDbMain("SapScada2");
+                await Task.Delay(TimeSpan.FromSeconds(delayTime), stoppingToken);
+
+                await scopedService.ConfirmToSap("SapScadaMain");
+                await Task.Delay(TimeSpan.FromSeconds(delayTime), stoppingToken);
+            }
+            catch (Exception ex) 
+            {
+                Console.WriteLine(ex.ToString());
+            }
         }
     }
 }
 
 public interface IScopedService
 {
-    Task<bool> SendConfirm(string DbChoice);
+    /// <summary>
+    /// Metodo que envía la orden a las BD del Scada
+    /// </summary>
+    /// <param name="DbChoice">BD de la cual se va a enviar el registro</param>
+    /// <returns></returns>
+    Task<bool> OrderToDbScada(string DbChoice);
 
-    Task<bool> SendToScada(string DbChoice);
+    /// <summary>
+    /// Metodo que envía la confirmacion a la BD principal
+    /// </summary>
+    /// <param name="DbChoice">BD de la cual se va a enviar el registro</param>
+    /// <returns></returns>
+    Task<bool> ConfirmToDbMain(string DbChoice);
+
+    /// <summary>
+    /// Metodo que envía la confirmacion a Sap
+    /// </summary>
+    /// <param name="DbChoice">BD de la cual se va a enviar el registro</param>
+    /// <returns></returns>
+    Task<bool> ConfirmToSap(string DbChoice);
 }
 
 public class ScopedService : BaseApiController, IScopedService
@@ -58,15 +86,21 @@ public class ScopedService : BaseApiController, IScopedService
         _mediator = mediator;
     }
 
-    public async Task<bool> SendConfirm(string DbChoice)
+    public async Task<bool> OrderToDbScada(string DbChoice)
     {
-        var result = await _mediator.Send(new SendConfirmRequest() { DbChoice = DbChoice });
+        var result = await _mediator.Send(new SendOrderToDbScada() { DbChoice = DbChoice });
         return result.Content.Result;
     }
 
-    public async Task<bool> SendToScada(string DbChoice)
+    public async Task<bool> ConfirmToDbMain(string DbChoice)
     {
-        var result = await _mediator.Send(new SendToScadaRequest() { DbChoice = DbChoice });
+        var result = await _mediator.Send(new SendConfirmToDbMain() { DbChoice = DbChoice });
+        return result.Content.Result;
+    }
+
+    public async Task<bool> ConfirmToSap(string DbChoice)
+    {
+        var result = await _mediator.Send(new SendConfirmToSap() { DbChoice = DbChoice });
         return result.Content.Result;
     }
 }

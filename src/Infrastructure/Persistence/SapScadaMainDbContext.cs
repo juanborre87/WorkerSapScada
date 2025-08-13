@@ -6,10 +6,6 @@ namespace Infrastructure.Persistence
 {
     public class SapScadaMainDbContext : DbContext
     {
-        public SapScadaMainDbContext()
-        {
-        }
-
         public SapScadaMainDbContext(DbContextOptions<SapScadaMainDbContext> options)
             : base(options)
         {

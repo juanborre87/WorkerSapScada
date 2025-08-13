@@ -1,7 +1,7 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 
-namespace Arq.Cqrs
+namespace Arq.Cqrs.Providers
 {
     public class DbContextProviderBuilder
     {

@@ -1,4 +1,5 @@
 ﻿using Application.Interfaces;
+using Domain.Dtos;
 using Domain.Models;
 using Newtonsoft.Json;
 using System.Net.Http.Headers;
@@ -9,8 +10,9 @@ namespace Infrastructure.Services
     public class SapOrderService : ISapOrderService
     {
         private readonly HttpClient _httpClient;
+        private readonly IFileLogger _logger;
 
-        public SapOrderService(HttpClient httpClient)
+        public SapOrderService(HttpClient httpClient, IFileLogger logger)
         {
             _httpClient = httpClient;
 
@@ -21,9 +23,10 @@ namespace Infrastructure.Services
             _httpClient.DefaultRequestHeaders.Accept.Clear();
             _httpClient.DefaultRequestHeaders.Accept.Add(
                 new MediaTypeWithQualityHeaderValue("application/json"));
+            _logger = logger;
         }
 
-        public async Task<bool> SendOrderConfirmationAsync(OrderConfirmationRequest confirmation)
+        public async Task<SapResponse> SendOrderConfirmationAsync(OrderConfirmationRequest confirmation)
         {
             var csrfUrl = "https://sapfioriqas.sap.acacoop.com.ar:443/sap/opu/odata/SAP/API_PROC_ORDER_CONFIRMATION_2_SRV/";
             var postUrl = $"{csrfUrl}ProcOrdConf2";
@@ -37,8 +40,13 @@ namespace Infrastructure.Services
                 var csrfResponse = await _httpClient.SendAsync(csrfRequest);
                 if (!csrfResponse.IsSuccessStatusCode)
                 {
-                    Console.WriteLine($"[SAP CSRF Error {csrfResponse.StatusCode}] {await csrfResponse.Content.ReadAsStringAsync()}");
-                    return false;
+                    await _logger.LogErrorAsync($"[SAP CSRF Error {csrfResponse.StatusCode}] {await csrfResponse.Content.ReadAsStringAsync()}",
+                        "Metodo: SendOrderConfirmationAsync");
+                    return new()
+                    {
+                        Result = false,
+                        Response = await csrfResponse.Content.ReadAsStringAsync()
+                    };
                 }
 
                 var csrfToken = csrfResponse.Headers.GetValues("x-csrf-token").FirstOrDefault();
@@ -60,17 +68,32 @@ namespace Infrastructure.Services
 
                 if (!postResponse.IsSuccessStatusCode)
                 {
-                    Console.WriteLine($"[SAP POST Error {postResponse.StatusCode}] {postContent}");
-                    return false;
+                    await _logger.LogErrorAsync($"[SAP POST Error {postResponse.StatusCode}] {postContent}",
+                        "Metodo: SendOrderConfirmationAsync");
+                    return new()
+                    {
+                        Result = false,
+                        Response = postContent
+                    };
                 }
 
-                Console.WriteLine("[SAP POST Success] " + postContent);
-                return true;
+                await _logger.LogErrorAsync($"[SAP POST Success] {postContent}] {postContent}",
+                    "Metodo: SendOrderConfirmationAsync");
+                return new()
+                {
+                    Result = true,
+                    Response = postContent
+                };
             }
             catch (Exception ex)
             {
-                Console.WriteLine("[SAP POST Exception] " + ex.Message);
-                return false;
+                await _logger.LogErrorAsync($"[SAP POST Exception] {ex.Message}",
+                    "Metodo: SendOrderConfirmationAsync");
+                return new()
+                {
+                    Result = false,
+                    Response = ex.Message
+                };
             }
         }
 

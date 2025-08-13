@@ -1,7 +1,9 @@
 ﻿using Arq.Core;
+using Arq.Cqrs.Interfaces;
+using Arq.Cqrs.Providers;
 using Microsoft.Extensions.DependencyInjection;
 
-namespace Arq.Cqrs
+namespace Arq.Cqrs.Extensions
 {
     public static class CqrsExtensions
     {
@@ -16,6 +18,7 @@ namespace Arq.Cqrs
 
             services.AddScoped(typeof(ICommandSqlDb<>), typeof(CommandSqlDb<>));
             services.AddScoped(typeof(IQuerySqlDb<>), typeof(QuerySqlDb<>));
+            services.AddScoped<IUnitOfWork, UnitOfWork>();
 
             return services;
         }

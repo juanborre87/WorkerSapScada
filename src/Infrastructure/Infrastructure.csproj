@@ -28,7 +28,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Folder Include="Connected Services\" />
     <Folder Include="Repositories\" />
   </ItemGroup>
 

@@ -1,6 +1,7 @@
 ﻿using Application.Interfaces;
 using Arq.Core;
 using Arq.Cqrs;
+using Arq.Cqrs.Extensions;
 using Infrastructure.Persistence;
 using Infrastructure.Services;
 using Microsoft.EntityFrameworkCore;
@@ -15,27 +16,27 @@ public static class DependencyInjection
     {
         services.AddDbContext<SapScadaMainDbContext>(
             options => options.UseSqlServer(configuration.GetConnectionString("SapScadaMain")),
-            ServiceLifetime.Transient);
-        services.AddDbContext<SapScada1DbContext>(
-            options => options.UseSqlServer(configuration.GetConnectionString("SapScada1")),
-            ServiceLifetime.Transient);
+            ServiceLifetime.Scoped);
+        //services.AddDbContext<SapScada1DbContext>(
+        //    options => options.UseSqlServer(configuration.GetConnectionString("SapScada1")),
+        //    ServiceLifetime.Scoped);
         services.AddDbContext<SapScada2DbContext>(
             options => options.UseSqlServer(configuration.GetConnectionString("SapScada2")),
-            ServiceLifetime.Transient);
+            ServiceLifetime.Scoped);
         services.AddHttpClient<SapOrderService>();
         services.AddTransient<ISapOrderService, SapOrderService>();
 
         services.AddCQRS(builder =>
         {
             builder.AddContext<SapScadaMainDbContext>("SapScadaMain");
-            builder.AddContext<SapScada1DbContext>("SapScada1");
+            //builder.AddContext<SapScada1DbContext>("SapScada1");
             builder.AddContext<SapScada2DbContext>("SapScada2");
         });
 
-        //services.AddTransient<ICommandSqlDB<SolicitudPagoEntity>, CommandSqlDB<SolicitudPagoEntity>>();
-        //services.AddTransient<IQuerySqlDB<SolicitudPagoEntity>, QuerySqlDB<SolicitudPagoEntity>>();
-        services.AddTransient(typeof(ICommandSqlDb<>), typeof(CommandSqlDb<>));
-        services.AddTransient(typeof(IQuerySqlDb<>), typeof(QuerySqlDb<>));
+        services.AddSingleton<IFileLogger, FileLogger>();
+        services.AddScoped<IUnitOfWork, UnitOfWork>();
+        services.AddScoped(typeof(ICommandSqlDb<>), typeof(CommandSqlDb<>));
+        services.AddScoped(typeof(IQuerySqlDb<>), typeof(QuerySqlDb<>));
 
 
         return services;
