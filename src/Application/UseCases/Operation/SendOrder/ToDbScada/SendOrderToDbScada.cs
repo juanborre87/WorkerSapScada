@@ -83,11 +83,12 @@ public class SendOrderToDbScadaHandler(
             try
             {
                 await processOrderCommandSqlDB.AddToTransactionAsync(processOrder, targetDb);
-                await processOrderComponentCommandSqlDB.AddRangeToTransactionAsync(components, "SapScadaMain");
+                await processOrderComponentCommandSqlDB.AddRangeToTransactionAsync(components, targetDb);
 
                 await logger.LogInfoAsync("Adicion exitosa de la orden y los componentes",
                     "Metodo: SendOrderToDbScadaHandler");
                 await uow.CommitAsync();
+                uow.Dispose();
 
                 return new Response<SendOrderToDbScadaResponse>
                 {

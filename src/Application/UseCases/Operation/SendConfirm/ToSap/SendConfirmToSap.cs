@@ -31,8 +31,7 @@ public class SendConfirmToSapHandler(
         try
         {
             var confirmation = await processOrderConfirmationQuerySqlDB
-                .FirstOrDefaultIncludeAsync(nameof(ProcessOrderConfirmation.Order),
-                x => x.CommStatus == 1, request.DbChoice, true);
+                .FirstOrDefaultAsync(x => x.CommStatus == 1, request.DbChoice, false);
 
             if (confirmation == null)
             {
@@ -48,6 +47,10 @@ public class SendConfirmToSapHandler(
                     }
                 };
             }
+
+            var processOrder = await processOrderQuerySqlDB
+                .FirstOrDefaultAsync(x => x.ManufacturingOrder == confirmation.OrderId, request.DbChoice, false);
+            confirmation.Order = processOrder;
 
             var movements = await materialMovementQuerySqlDB
                 .WhereIncludeAsync(nameof(ProcessOrderConfirmationMaterialMovement.ProcessOrderComponent),
@@ -73,16 +76,10 @@ public class SendConfirmToSapHandler(
             var result = await sapOrderService.SendOrderConfirmationAsync(sapRequest);
             if (result.Result)
             {
-                await uow.BeginTransactionAsync(request.DbChoice);
                 try
                 {
-                    var processOrder = await processOrderQuerySqlDB.FirstOrDefaultAsync(x => x.Id == confirmation.Order.Id, request.DbChoice, true);
                     processOrder.CommStatus = 2;
                     await processOrderCommandSqlDB.UpdateToTransactionAsync(processOrder, request.DbChoice);
-                    //confirmation.Sapresponse = result.Response;
-                    //await processOrderConfirmationCommandSqlDB.UpdateToTransactionAsync(confirmation, request.DbChoice);
-
-                    await uow.CommitAsync();
 
                     await logger.LogInfoAsync("Actualizacion exitosa de la orden CommStatus = 2",
                         "Metodo: SendConfirmToSapHandler");
@@ -90,7 +87,6 @@ public class SendConfirmToSapHandler(
                 }
                 catch (Exception ex)
                 {
-                    await uow.RollbackAsync();
                     await logger.LogErrorAsync($"Error al actualizar la orden: {ex.Message}",
                         "Metodo: SendConfirmToSapHandler");
                     return new Response<SendConfirmToSapResponse>
