@@ -2,6 +2,12 @@
 
 public class Clone
 {
+    /// <summary>
+    /// Genera un clon del modelo sin Id
+    /// </summary>
+    /// <typeparam name="T"></typeparam>
+    /// <param name="source"></param>
+    /// <returns></returns>
     public static T WithoutId<T>(T source) where T : new()
     {
         var clone = new T();

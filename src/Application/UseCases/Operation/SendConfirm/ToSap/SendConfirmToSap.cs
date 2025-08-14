@@ -21,6 +21,7 @@ public class SendConfirmToSapHandler(
     IQuerySqlDb<ProcessOrderConfirmationMaterialMovement> materialMovementQuerySqlDB,
     IQuerySqlDb<ProcessOrder> processOrderQuerySqlDB,
     ICommandSqlDb<ProcessOrder> processOrderCommandSqlDB,
+    ICommandSqlDb<ProcessOrderConfirmation> processOrderConfirmationCommandSqlDB,
     ISapOrderService sapOrderService,
     IConfiguration configuration) :
     IRequestHandler<SendConfirmToSap, Response<SendConfirmToSapResponse>>
@@ -30,6 +31,7 @@ public class SendConfirmToSapHandler(
 
         try
         {
+            // Busca confirmacion en la Bd principal
             var confirmation = await processOrderConfirmationQuerySqlDB
                 .FirstOrDefaultAsync(x => x.CommStatus == 1, request.DbChoice, false);
 
@@ -48,10 +50,12 @@ public class SendConfirmToSapHandler(
                 };
             }
 
+            // Busca la orden de la confirmacion en la Bd principal
             var processOrder = await processOrderQuerySqlDB
                 .FirstOrDefaultAsync(x => x.ManufacturingOrder == confirmation.OrderId, request.DbChoice, false);
             confirmation.Order = processOrder;
 
+            // Busca los movimientos de material en la Bd principal
             var movements = await materialMovementQuerySqlDB
                 .WhereIncludeAsync(nameof(ProcessOrderConfirmationMaterialMovement.ProcessOrderComponent),
                 x => x.ProcessOrderConfirmationId == confirmation.Id, request.DbChoice, false);
@@ -71,23 +75,23 @@ public class SendConfirmToSapHandler(
                 };
             }
 
+            // Mapea los valores necesarios para enviarlos a Sap
             var sapRequest = SapConfirmationMapper.MapToDto(confirmation, movements);
-            //sapRequest.EnteredByUser = "DSALAZAR";
             var result = await sapOrderService.SendOrderConfirmationAsync(sapRequest);
+            await logger.LogInfoAsync("Confirmacion enviada a SAP", "Metodo: SendOrderConfirmationAsync");
             if (result.Result)
             {
                 try
                 {
-                    processOrder.CommStatus = 2;
-                    await processOrderCommandSqlDB.UpdateToTransactionAsync(processOrder, request.DbChoice);
-
-                    await logger.LogInfoAsync("Actualizacion exitosa de la orden CommStatus = 2",
+                    confirmation.CommStatus = 2;
+                    await processOrderConfirmationCommandSqlDB.UpdateAsync(confirmation, request.DbChoice);
+                    await logger.LogInfoAsync("Actualizacion exitosa de la confirmacion CommStatus = 2 en la Db: SapScadaMain",
                         "Metodo: SendConfirmToSapHandler");
 
                 }
                 catch (Exception ex)
                 {
-                    await logger.LogErrorAsync($"Error al actualizar la orden: {ex.Message}",
+                    await logger.LogErrorAsync($"Error al actualizar la confirmacion en la Db {request.DbChoice}: {ex.Message}",
                         "Metodo: SendConfirmToSapHandler");
                     return new Response<SendConfirmToSapResponse>
                     {
@@ -108,7 +112,7 @@ public class SendConfirmToSapHandler(
                 Content = new SendConfirmToSapResponse
                 {
                     Result = result.Result,
-                    Message = result.Result ? "Confirmacion enviada a SAP" : "Envío fallido de la confirmacion a SAP."
+                    Message = string.Empty
                 }
             };
         }

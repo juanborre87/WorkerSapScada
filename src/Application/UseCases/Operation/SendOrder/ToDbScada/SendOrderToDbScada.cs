@@ -31,6 +31,7 @@ public class SendOrderToDbScadaHandler(
         try
         {
             var targetDb = string.Empty;
+            // Busca orden en la Bd principal 
             var processOrder = await processOrderQuerySqlDB
                 .FirstOrDefaultAsync(x => x.CommStatus == 1, request.DbChoice, false);
 
@@ -49,6 +50,7 @@ public class SendOrderToDbScadaHandler(
                 };
             }
 
+            // Busca los componentes de la orden en la Bd principal
             var components = await processOrderComponentQuerySqlDB
                     .WhereAsync(x => x.ManufacturingOrder == processOrder.ManufacturingOrder, request.DbChoice, false);
 
@@ -78,33 +80,22 @@ public class SendOrderToDbScadaHandler(
                 };
             }
 
+            // Adiciona la orden y los componentes en la Bd elegida
             await uow.BeginTransactionAsync(targetDb);
-
             try
             {
                 await processOrderCommandSqlDB.AddToTransactionAsync(processOrder, targetDb);
                 await processOrderComponentCommandSqlDB.AddRangeToTransactionAsync(components, targetDb);
-
-                await logger.LogInfoAsync("Adicion exitosa de la orden y los componentes",
-                    "Metodo: SendOrderToDbScadaHandler");
                 await uow.CommitAsync();
                 uow.Dispose();
-
-                return new Response<SendOrderToDbScadaResponse>
-                {
-                    StatusCode = HttpStatusCode.OK,
-                    Content = new SendOrderToDbScadaResponse
-                    {
-                        Result = true,
-                        Message = string.Empty
-                    }
-                };
+                await logger.LogInfoAsync($"Adicion exitosa de la orden y los componentes en la Db: {targetDb}",
+                    "Metodo: SendOrderToDbScadaHandler");
 
             }
             catch (Exception ex)
             {
                 await uow.RollbackAsync();
-                await logger.LogErrorAsync($"Error al guardar la orden: {ex.Message}",
+                await logger.LogErrorAsync($"Error al guardar la orden en la Db {targetDb}: {ex.Message}",
                     "Metodo: SendOrderToDbScadaHandler");
                 return new Response<SendOrderToDbScadaResponse>
                 {
@@ -116,6 +107,21 @@ public class SendOrderToDbScadaHandler(
                     }
                 };
             }
+
+            processOrder.CommStatus = 2;
+            await processOrderCommandSqlDB.UpdateAsync(processOrder, "SapScadaMain");
+            await logger.LogInfoAsync("Actualizacion exitosa de la orden CommStatus = 2 en la Db: SapScadaMain",
+                "Metodo: SendOrderToDbScadaHandler");
+
+            return new Response<SendOrderToDbScadaResponse>
+            {
+                StatusCode = HttpStatusCode.OK,
+                Content = new SendOrderToDbScadaResponse
+                {
+                    Result = true,
+                    Message = string.Empty
+                }
+            };
 
         }
         catch (Exception ex)

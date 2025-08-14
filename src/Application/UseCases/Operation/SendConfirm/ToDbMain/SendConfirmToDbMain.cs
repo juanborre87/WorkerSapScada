@@ -29,6 +29,7 @@ public class SendConfirmToDbMainHandler(
 
         try
         {
+            // Busca confirmacion en la Bd auxiliar 
             var confirmation = await processOrderConfirmationQuerySqlDB
                 .FirstOrDefaultAsync(x => x.CommStatus == 1, request.DbChoice, false);
 
@@ -47,6 +48,7 @@ public class SendConfirmToDbMainHandler(
                 };
             }
 
+            // Busca los movimientos de material en la Bd auxiliar
             var movements = await materialMovementQuerySqlDB
                 .WhereAsync(x => x.ProcessOrderConfirmationId == confirmation.Id, request.DbChoice, false);
 
@@ -65,27 +67,25 @@ public class SendConfirmToDbMainHandler(
                 };
             }
 
+            // Adiciona la confirmacion y los movimientos de material en la Bd principal
             await uow.BeginTransactionAsync("SapScadaMain");
-
             try
             {
                 await processOrderConfirmationCommandSqlDB.AddToTransactionAsync(confirmation, "SapScadaMain");
-
                 var clonedMovements = movements
                     .Select(m => Clone.WithoutId(m))
                     .ToList();
                 await materialMovementCommandSqlDB.AddRangeToTransactionAsync(clonedMovements, "SapScadaMain");
-
                 await uow.CommitAsync();
-                await logger.LogInfoAsync("Adicion exitosa de la confirmacion y movimientos de materiales",
-                    "Metodo: SendConfirmToDbMainHandler");
                 uow.Dispose();
+                await logger.LogInfoAsync($"Adicion exitosa de la confirmacion y movimientos de materiales en la Db: SapScadaMain",
+                    "Metodo: SendConfirmToDbMainHandler");
 
             }
             catch (Exception ex)
             {
                 await uow.RollbackAsync();
-                await logger.LogErrorAsync($"Error al guardar la confirmación: {ex.Message}", 
+                await logger.LogErrorAsync($"Error al guardar la confirmación en la Db SapScadaMain: {ex.Message}", 
                     "Metodo: SendConfirmToDbMainHandler");
                 return new Response<SendConfirmToDbMainResponse>
                 {
@@ -100,8 +100,7 @@ public class SendConfirmToDbMainHandler(
 
             confirmation.CommStatus = 2;
             await processOrderConfirmationCommandSqlDB.UpdateAsync(confirmation, request.DbChoice);
-
-            await logger.LogInfoAsync("Actualizacion exitosa de la confirmacion CommStatus = 2",
+            await logger.LogInfoAsync($"Actualizacion exitosa de la confirmacion CommStatus = 2 en la Db: {request.DbChoice}",
                 "Metodo: SendConfirmToDbMainHandler");
 
             return new Response<SendConfirmToDbMainResponse>
