@@ -23,8 +23,8 @@ public static class DependencyInjection
         services.AddDbContext<SapScada2DbContext>(
             options => options.UseSqlServer(configuration.GetConnectionString("SapScada2")),
             ServiceLifetime.Scoped);
-        services.AddHttpClient<SapOrderService>();
-        services.AddTransient<ISapOrderService, SapOrderService>();
+        services.AddHttpClient<SendConfirmSapService>();
+        services.AddTransient<ISendConfirmSapService, SendConfirmSapService>();
 
         services.AddCQRS(builder =>
         {
@@ -35,8 +35,8 @@ public static class DependencyInjection
 
         services.AddSingleton<IFileLogger, FileLogger>();
         services.AddScoped<IUnitOfWork, UnitOfWork>();
-        services.AddScoped(typeof(ICommandSqlDb<>), typeof(CommandSqlDb<>));
-        services.AddScoped(typeof(IQuerySqlDb<>), typeof(QuerySqlDb<>));
+        services.AddScoped(typeof(IEFCommandRepository<>), typeof(EFCommandRepository<>));
+        services.AddScoped(typeof(IEFQueryRepository<>), typeof(EFQueryRepository<>));
 
 
         return services;

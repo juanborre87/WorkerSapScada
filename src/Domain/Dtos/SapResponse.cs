@@ -1,8 +1,10 @@
-﻿namespace Domain.Dtos
+﻿using System.Net;
+
+namespace Domain.Dtos
 {
     public class SapResponse
     {
-        public bool Result { get; set; }
+        public HttpStatusCode Code { get; set; }
         public string Response { get; set; }
     }
 }

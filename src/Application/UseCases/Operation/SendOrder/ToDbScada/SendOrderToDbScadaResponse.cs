@@ -1,9 +1,8 @@
 ﻿using Arq.Host;
 
-namespace Application.UseCases.Operation.SendOrder.ToDbScada
+namespace Application.UseCases.Operation.SendOrder.ToDbScada;
+
+public class SendOrderToDbScadaResponse : Notify
 {
-    public class SendOrderToDbScadaResponse : Notify
-    {
-        public bool Result { get; set; }
-    }
+    public bool Result { get; set; }
 }

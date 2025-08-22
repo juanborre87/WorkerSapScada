@@ -5,26 +5,21 @@ namespace Application.Helpers;
 
 public static class SapConfirmationMapper
 {
-    public static OrderConfirmationRequest MapToDto(ProcessOrderConfirmation confirmation, List<ProcessOrderConfirmationMaterialMovement> movements)
+    public static OrderConfirmationRequest MapToDto(ProcessOrderConfirmation confirmation)
     {
         var dto = new OrderConfirmationRequest
         {
             OrderID = confirmation.OrderId,
-            //OrderOperation = null,
-            //OrderSuboperation = null,
-            //OrderType = confirmation.Order?.ManufacturingOrderType,
-            //OrderOperationInternalID = null,
+
             ConfirmationText = confirmation.ConfirmationText,
             Language = "ES", // puedes ajustar si es dinámico
-            //Material = confirmation.Order?.Material,
-            //OrderPlannedTotalQty = confirmation.Order?.TotalQuantity?.ToString() ?? "0",
-            //ProductionUnit = confirmation.Order?.ProductionUnit,
+
             FinalConfirmationType = confirmation.FinalConfirmationType,
             IsFinalConfirmation = confirmation.IsFinalConfirmation ?? false,
             OpenReservationsIsCleared = false,
             IsReversed = false,
             IsReversal = false,
-            APIConfHasNoGoodsMovements = movements == null || movements.Count == 0,
+            //APIConfHasNoGoodsMovements = movements == null || movements.Count == 0,
             //OrderConfirmationRecordType = null,
             //ConfirmationEntryDate = FormatSapDate(confirmation.ConfirmationEntryDateTime),
             //ConfirmationEntryTime = FormatSapTime(confirmation.ConfirmationEntryDateTime),
@@ -108,9 +103,9 @@ public static class SapConfirmationMapper
 
             ToProcOrdConfMatlDocItm = new MaterialDocumentItemResults
             {
-                Results = movements.Select(m =>
+                Results = confirmation.ProcessOrderConfirmationMaterialMovements.Select(m =>
                 {
-                    var component = m.ProcessOrderComponent;
+                    var component = m.ProcessOrderComponentId;
                     return new MaterialDocumentItem
                     {
                         //OrderType = confirmation.Order?.ManufacturingOrderType,

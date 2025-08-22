@@ -24,6 +24,10 @@ namespace Infrastructure.Persistence
 
         public virtual DbSet<Product> Products { get; set; }
 
+        public virtual DbSet<Recipe> Recipes { get; set; }
+
+        public virtual DbSet<RecipeBom> RecipeBoms { get; set; }
+
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             modelBuilder.ApplyConfigurationsFromAssembly(Assembly.GetExecutingAssembly());

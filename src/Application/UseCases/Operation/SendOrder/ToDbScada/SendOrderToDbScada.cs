@@ -3,6 +3,7 @@ using Arq.Core;
 using Arq.Host;
 using Domain.Entities;
 using MediatR;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using System.Net;
 
@@ -14,30 +15,45 @@ public class SendOrderToDbScada : IRequest<Response<SendOrderToDbScadaResponse>>
 }
 
 public class SendOrderToDbScadaHandler(
-    IUnitOfWork uow,
     IFileLogger logger,
-    IQuerySqlDb<ProcessOrder> processOrderQuerySqlDB,
-    IQuerySqlDb<ProcessOrderComponent> processOrderComponentQuerySqlDB,
-    IQuerySqlDb<Product> productQuerySqlDB,
-    ICommandSqlDb<Product> productCommandSqlDb,
-    ICommandSqlDb<ProcessOrder> processOrderCommandSqlDB,
-    ICommandSqlDb<ProcessOrderComponent> processOrderComponentCommandSqlDB,
+    IUnitOfWork uow,
     IConfiguration configuration) :
     IRequestHandler<SendOrderToDbScada, Response<SendOrderToDbScadaResponse>>
 {
     public async Task<Response<SendOrderToDbScadaResponse>> Handle(SendOrderToDbScada request, CancellationToken cancellationToken)
     {
 
+        await logger.LogInfoAsync("Inicio de sincronización de órdenes", 
+            "Metodo: SendOrderToDbScadaHandler");
+        var orderCommandDbMain = uow.CommandRepository<ProcessOrder>("SapScada");
+        var orderQueryDbMain = uow.QueryRepository<ProcessOrder>("SapScada");
+        var orderCommandDbAux = uow.CommandRepository<ProcessOrder>(request.DbChoice);
+        var componentCommandDbAux = uow.CommandRepository<ProcessOrderComponent>(request.DbChoice);
+
         try
         {
-            var targetDb = string.Empty;
-            // Busca orden en la Bd principal 
-            var processOrder = await processOrderQuerySqlDB
-                .FirstOrDefaultAsync(x => x.CommStatus == 1, request.DbChoice, false);
+            await uow.BeginTransactionAsync("SapScada");
+            await uow.BeginTransactionAsync(request.DbChoice);
 
-            if (processOrder == null)
+            int destinoRecetaDeControl = request.DbChoice switch
             {
-                await logger.LogInfoAsync($"No se encontró orden con CommStatus == 1 en la Db: {request.DbChoice}",
+                "SapScada1" => 10,
+                "SapScada2" => 20,
+                _ => 0
+            };
+
+            // Buscar órdenes en la Bd principal
+            var ordersExistDbMain = await orderQueryDbMain.WhereIncludeMultipleAsync(
+                x => x.CommStatus == 1 &&
+                x.DestinoRecetaDeControl == destinoRecetaDeControl,
+                tracking: true,
+                q => q.Include(x => x.ProcessOrderComponents));
+
+            if (ordersExistDbMain.Count > 0)
+            {
+                await logger.LogInfoAsync($"No se encontraron ordenes con " +
+                    $"CommStatus == 1 & destinoRecetaDeControl == " +
+                    $"{destinoRecetaDeControl} en la Db: {request.DbChoice}",
                     "Metodo: SendOrderToDbScadaHandler");
                 return new Response<SendOrderToDbScadaResponse>
                 {
@@ -50,69 +66,24 @@ public class SendOrderToDbScadaHandler(
                 };
             }
 
-            // Busca los componentes de la orden en la Bd principal
-            var components = await processOrderComponentQuerySqlDB
-                    .WhereAsync(x => x.ManufacturingOrder == processOrder.ManufacturingOrder, request.DbChoice, false);
 
-            if (processOrder.DestinoRecetaDeControl == 10)
+            // Insertar órdenes y componentes en la Bd destino
+            foreach (var order in ordersExistDbMain)
             {
-                targetDb = "SapScada1";
-                var result = await SynchronizeProductsAsync(request.DbChoice, targetDb);
+                await orderCommandDbAux.AddAsync(order);
+                await componentCommandDbAux.AddRangeAsync(order.ProcessOrderComponents);
             }
 
-            if (processOrder.DestinoRecetaDeControl == 20)
+            // Actualiza los productos que fueron ingresados en la Bd de destino
+            foreach (var order in ordersExistDbMain)
             {
-                targetDb = "SapScada2";
-                var result = await SynchronizeProductsAsync(request.DbChoice, targetDb);
+                order.CommStatus = 2;
+                await orderCommandDbMain.UpdateAsync(order);
             }
-            else
-            {
-                await logger.LogErrorAsync($"El DestinoRecetaDeControl es inválido debe ser: 10 o 20 {processOrder.DestinoRecetaDeControl}",
-                    "Metodo: SendOrderToDbScadaHandler");
-                return new Response<SendOrderToDbScadaResponse>
-                {
-                    StatusCode = HttpStatusCode.BadRequest,
-                    Content = new SendOrderToDbScadaResponse
-                    {
-                        Result = false,
-                        Message = string.Empty
-                    }
-                };
-            }
+            await uow.CommitAllAsync();
 
-            // Adiciona la orden y los componentes en la Bd elegida
-            await uow.BeginTransactionAsync(targetDb);
-            try
-            {
-                await processOrderCommandSqlDB.AddToTransactionAsync(processOrder, targetDb);
-                await processOrderComponentCommandSqlDB.AddRangeToTransactionAsync(components, targetDb);
-                await uow.CommitAsync();
-                uow.Dispose();
-                await logger.LogInfoAsync($"Adicion exitosa de la orden y los componentes en la Db: {targetDb}",
-                    "Metodo: SendOrderToDbScadaHandler");
-
-            }
-            catch (Exception ex)
-            {
-                await uow.RollbackAsync();
-                await logger.LogErrorAsync($"Error al guardar la orden en la Db {targetDb}: {ex.Message}",
-                    "Metodo: SendOrderToDbScadaHandler");
-                return new Response<SendOrderToDbScadaResponse>
-                {
-                    StatusCode = HttpStatusCode.InternalServerError,
-                    Content = new SendOrderToDbScadaResponse
-                    {
-                        Result = false,
-                        Message = string.Empty
-                    }
-                };
-            }
-
-            processOrder.CommStatus = 2;
-            await processOrderCommandSqlDB.UpdateAsync(processOrder, "SapScadaMain");
-            await logger.LogInfoAsync("Actualizacion exitosa de la orden CommStatus = 2 en la Db: SapScadaMain",
-                "Metodo: SendOrderToDbScadaHandler");
-
+            await logger.LogInfoAsync($"Adicion exitosa de las ordenes y componentes en la Db: " +
+                $"{request.DbChoice}", "Metodo: SyncProductHandler");
             return new Response<SendOrderToDbScadaResponse>
             {
                 StatusCode = HttpStatusCode.OK,
@@ -126,6 +97,7 @@ public class SendOrderToDbScadaHandler(
         }
         catch (Exception ex)
         {
+            await uow.RollbackAllAsync();
             await logger.LogErrorAsync($"Error: {ex.Message}",
                 "Metodo: SendOrderToDbScadaHandler");
             return new Response<SendOrderToDbScadaResponse>
@@ -139,26 +111,6 @@ public class SendOrderToDbScadaHandler(
             };
         }
 
-    }
-
-    public async Task<int> SynchronizeProductsAsync(string SourceDb, string TargetDb)
-    {
-        var sourceProducts = await productQuerySqlDB.ListAllAsync(SourceDb);
-        var targetProducts = await productQuerySqlDB.ListAllAsync(TargetDb);
-
-        // Crear un conjunto con los códigos de producto ya existentes en la base de datos destino
-        var targetCodes = new HashSet<string>(targetProducts.Select(p => p.ProductCode));
-
-        // Filtrar los productos que están en origen pero no en destino
-        var missingProducts = sourceProducts
-            .Where(p => !targetCodes.Contains(p.ProductCode))
-            .ToList();
-
-        // Insertar los productos faltantes en la base de datos destino
-        await productCommandSqlDb.AddRangeAsync(missingProducts, TargetDb);
-
-        // Retornar la cantidad de productos insertados
-        return missingProducts.Count;
     }
 
 }

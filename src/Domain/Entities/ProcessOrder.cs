@@ -2,8 +2,6 @@
 
 public partial class ProcessOrder
 {
-    public long Id { get; set; }
-
     public string ManufacturingOrder { get; set; }
 
     public string ManufacturingOrderCategory { get; set; }
@@ -60,9 +58,15 @@ public partial class ProcessOrder
 
     public byte CommStatus { get; set; }
 
+    public DateTime? InterfaceCreateTimestamp { get; set; }
+
+    public DateTime? InterfaceUpdateTimestamp { get; set; }
+
     public int? DestinoRecetaDeControl { get; set; }
 
-    public DateTime? InterfaceTimestamp { get; set; }
+    public Guid BillOfMaterialHeaderUuid { get; set; }
+
+    public virtual Recipe BillOfMaterialHeaderUu { get; set; }
 
     public virtual CommStatus CommStatusNavigation { get; set; }
 

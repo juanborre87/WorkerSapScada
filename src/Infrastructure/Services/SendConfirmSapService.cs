@@ -2,17 +2,18 @@
 using Domain.Dtos;
 using Domain.Models;
 using Newtonsoft.Json;
+using System.Net;
 using System.Net.Http.Headers;
 using System.Text;
 
 namespace Infrastructure.Services
 {
-    public class SapOrderService : ISapOrderService
+    public class SendConfirmSapService : ISendConfirmSapService
     {
         private readonly HttpClient _httpClient;
         private readonly IFileLogger _logger;
 
-        public SapOrderService(HttpClient httpClient, IFileLogger logger)
+        public SendConfirmSapService(HttpClient httpClient, IFileLogger logger)
         {
             _httpClient = httpClient;
 
@@ -44,7 +45,7 @@ namespace Infrastructure.Services
                         "Metodo: SendOrderConfirmationAsync");
                     return new()
                     {
-                        Result = false,
+                        Code = csrfResponse.StatusCode,
                         Response = await csrfResponse.Content.ReadAsStringAsync()
                     };
                 }
@@ -72,7 +73,7 @@ namespace Infrastructure.Services
                         "Metodo: SendOrderConfirmationAsync");
                     return new()
                     {
-                        Result = false,
+                        Code = postResponse.StatusCode,
                         Response = postContent
                     };
                 }
@@ -81,7 +82,7 @@ namespace Infrastructure.Services
                     "Metodo: SendOrderConfirmationAsync");
                 return new()
                 {
-                    Result = true,
+                    Code = postResponse.StatusCode,
                     Response = postContent
                 };
             }
@@ -91,7 +92,7 @@ namespace Infrastructure.Services
                     "Metodo: SendOrderConfirmationAsync");
                 return new()
                 {
-                    Result = false,
+                    Code = HttpStatusCode.InternalServerError,
                     Response = ex.Message
                 };
             }

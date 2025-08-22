@@ -1,9 +1,9 @@
-﻿using Application.Helpers;
-using Application.Interfaces;
+﻿using Application.Interfaces;
 using Arq.Core;
 using Arq.Host;
 using Domain.Entities;
 using MediatR;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using System.Net;
 
@@ -15,46 +15,35 @@ public class SendConfirmToDbMain : IRequest<Response<SendConfirmToDbMainResponse
 }
 
 public class SendConfirmToDbMainHandler(
-    IUnitOfWork uow,
     IFileLogger logger,
-    IQuerySqlDb<ProcessOrderConfirmation> processOrderConfirmationQuerySqlDB,
-    IQuerySqlDb<ProcessOrderConfirmationMaterialMovement> materialMovementQuerySqlDB,
-    ICommandSqlDb<ProcessOrderConfirmation> processOrderConfirmationCommandSqlDB,
-    ICommandSqlDb<ProcessOrderConfirmationMaterialMovement> materialMovementCommandSqlDB,
+    IUnitOfWork uow,
     IConfiguration configuration) :
     IRequestHandler<SendConfirmToDbMain, Response<SendConfirmToDbMainResponse>>
 {
     public async Task<Response<SendConfirmToDbMainResponse>> Handle(SendConfirmToDbMain request, CancellationToken cancellationToken)
     {
 
+        await logger.LogInfoAsync("Inicio de sincronización de órdenes",
+            "Metodo: SendConfirmToDbMainHandler");
+        var confirmCommandDbMain = uow.CommandRepository<ProcessOrderConfirmation>("SapScada");
+        var confirmQueryDbAux = uow.QueryRepository<ProcessOrderConfirmation>(request.DbChoice);
+        var confirmAuxCommandDbAux = uow.CommandRepository<ProcessOrderConfirmation>(request.DbChoice);
+        var movementCommandDbMain = uow.CommandRepository<ProcessOrderConfirmationMaterialMovement>("SapScada");
+
         try
         {
-            // Busca confirmacion en la Bd auxiliar 
-            var confirmation = await processOrderConfirmationQuerySqlDB
-                .FirstOrDefaultAsync(x => x.CommStatus == 1, request.DbChoice, false);
+            await uow.BeginTransactionAsync("SapScada");
+            await uow.BeginTransactionAsync(request.DbChoice);
 
-            if (confirmation == null)
+            // Buscar confirmaciones en la Bd aux
+            var confirmsExistDbAux = await confirmQueryDbAux.WhereIncludeMultipleAsync(
+                x => x.CommStatus == 1,
+                tracking: true,
+                q => q.Include(x => x.ProcessOrderConfirmationMaterialMovements));
+
+            if (confirmsExistDbAux.Count > 0)
             {
-                await logger.LogInfoAsync($"No se encontró confirmación en la Db: {request.DbChoice}",
-                    "Metodo: SendConfirmToDbMainHandler");
-                return new Response<SendConfirmToDbMainResponse>
-                {
-                    StatusCode = HttpStatusCode.NotFound,
-                    Content = new SendConfirmToDbMainResponse
-                    {
-                        Result = false,
-                        Message = $"No se encontró confirmación en la Db: {request.DbChoice}"
-                    }
-                };
-            }
-
-            // Busca los movimientos de material en la Bd auxiliar
-            var movements = await materialMovementQuerySqlDB
-                .WhereAsync(x => x.ProcessOrderConfirmationId == confirmation.Id, request.DbChoice, false);
-
-            if (movements.Count == 0)
-            {
-                await logger.LogInfoAsync($"No se encontró movimiento de material en la confirmación: {confirmation.Id}", 
+                await logger.LogInfoAsync($"No se encontraron movimientos con CommStatus == 1",
                     "Metodo: SendConfirmToDbMainHandler");
                 return new Response<SendConfirmToDbMainResponse>
                 {
@@ -67,42 +56,24 @@ public class SendConfirmToDbMainHandler(
                 };
             }
 
-            // Adiciona la confirmacion y los movimientos de material en la Bd principal
-            await uow.BeginTransactionAsync("SapScadaMain");
-            try
+            // Insertar confirmaciones y movimientos en la Bd principal
+            foreach (var confirm in confirmsExistDbAux)
             {
-                await processOrderConfirmationCommandSqlDB.AddToTransactionAsync(confirmation, "SapScadaMain");
-                var clonedMovements = movements
-                    .Select(m => Clone.WithoutId(m))
-                    .ToList();
-                await materialMovementCommandSqlDB.AddRangeToTransactionAsync(clonedMovements, "SapScadaMain");
-                await uow.CommitAsync();
-                uow.Dispose();
-                await logger.LogInfoAsync($"Adicion exitosa de la confirmacion y movimientos de materiales en la Db: SapScadaMain",
-                    "Metodo: SendConfirmToDbMainHandler");
-
-            }
-            catch (Exception ex)
-            {
-                await uow.RollbackAsync();
-                await logger.LogErrorAsync($"Error al guardar la confirmación en la Db SapScadaMain: {ex.Message}", 
-                    "Metodo: SendConfirmToDbMainHandler");
-                return new Response<SendConfirmToDbMainResponse>
-                {
-                    StatusCode = HttpStatusCode.InternalServerError,
-                    Content = new SendConfirmToDbMainResponse
-                    {
-                        Result = false,
-                        Message = string.Empty
-                    }
-                };
+                await confirmCommandDbMain.AddAsync(confirm);
+                await movementCommandDbMain.AddRangeAsync(confirm.ProcessOrderConfirmationMaterialMovements);
             }
 
-            confirmation.CommStatus = 2;
-            await processOrderConfirmationCommandSqlDB.UpdateAsync(confirmation, request.DbChoice);
-            await logger.LogInfoAsync($"Actualizacion exitosa de la confirmacion CommStatus = 2 en la Db: {request.DbChoice}",
-                "Metodo: SendConfirmToDbMainHandler");
+            // Actualiza las confirmaciones que fueron ingresados en la Bd de destino
+            foreach (var confirm in confirmsExistDbAux)
+            {
+                confirm.CommStatus = 2;
+                await confirmAuxCommandDbAux.UpdateAsync(confirm);
+            }
 
+            await uow.CommitAllAsync();
+
+            await logger.LogInfoAsync($"Adicion exitosa de las confirmaciones y movimientos en la Db: " +
+                $"{request.DbChoice}", "Metodo: SendConfirmToDbMainHandler");
             return new Response<SendConfirmToDbMainResponse>
             {
                 StatusCode = HttpStatusCode.OK,
