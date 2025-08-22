@@ -1,4 +1,5 @@
-﻿using Application.Interfaces;
+﻿using Application.Helpers;
+using Application.Interfaces;
 using Arq.Core;
 using Arq.Host;
 using Domain.Entities;
@@ -23,11 +24,12 @@ public class SendOrderToDbScadaHandler(
     public async Task<Response<SendOrderToDbScadaResponse>> Handle(SendOrderToDbScada request, CancellationToken cancellationToken)
     {
 
-        await logger.LogInfoAsync("Inicio de sincronización de órdenes", 
+        await logger.LogInfoAsync("Inicio de sincronización de ordenes", 
             "Metodo: SendOrderToDbScadaHandler");
         var orderCommandDbMain = uow.CommandRepository<ProcessOrder>("SapScada");
         var orderQueryDbMain = uow.QueryRepository<ProcessOrder>("SapScada");
         var orderCommandDbAux = uow.CommandRepository<ProcessOrder>(request.DbChoice);
+        var orderQueryDbAux = uow.QueryRepository<ProcessOrder>(request.DbChoice);
         var componentCommandDbAux = uow.CommandRepository<ProcessOrderComponent>(request.DbChoice);
 
         try
@@ -42,7 +44,7 @@ public class SendOrderToDbScadaHandler(
                 _ => 0
             };
 
-            // Buscar órdenes en la Bd principal
+            // Buscar ordenes en la Bd principal
             var ordersExistDbMain = await orderQueryDbMain.WhereIncludeMultipleAsync(
                 x => x.CommStatus == 1 &&
                 x.DestinoRecetaDeControl == destinoRecetaDeControl,
@@ -67,11 +69,25 @@ public class SendOrderToDbScadaHandler(
             }
 
 
-            // Insertar órdenes y componentes en la Bd destino
-            foreach (var order in ordersExistDbMain)
+            // Actualiza o inserta ordenes y componentes en la Bd de destino que fueron encontradas en la Bd principal
+            foreach (var orderNew in ordersExistDbMain)
             {
-                await orderCommandDbAux.AddAsync(order);
-                await componentCommandDbAux.AddRangeAsync(order.ProcessOrderComponents);
+                var orderExistDbAux = await orderQueryDbAux.FirstOrDefaultAsync(
+                    x => x.ManufacturingOrder == orderNew.ManufacturingOrder,
+                    tracking: true);
+
+                if (orderExistDbAux == null)
+                {
+                    await orderCommandDbAux.AddAsync(orderNew);
+                    await componentCommandDbAux.AddRangeAsync(orderNew.ProcessOrderComponents);
+                }
+                else
+                {
+                    await componentCommandDbAux.DeleteRangeAsync(orderExistDbAux.ProcessOrderComponents);
+                    orderExistDbAux = orderNew.MapTo<ProcessOrder>();
+                    await orderCommandDbAux.UpdateAsync(orderExistDbAux);
+                    await componentCommandDbAux.AddRangeAsync(orderNew.ProcessOrderComponents);
+                }
             }
 
             // Actualiza los productos que fueron ingresados en la Bd de destino

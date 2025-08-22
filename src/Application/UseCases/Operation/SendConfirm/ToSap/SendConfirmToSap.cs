@@ -1,6 +1,5 @@
 ﻿using Application.Helpers;
 using Application.Interfaces;
-using Application.UseCases.Operation.SendOrder.ToDbScada;
 using Arq.Core;
 using Arq.Host;
 using Domain.Entities;

@@ -1,4 +1,5 @@
-﻿using Application.Interfaces;
+﻿using Application.Helpers;
+using Application.Interfaces;
 using Arq.Core;
 using Arq.Host;
 using Domain.Entities;
@@ -36,13 +37,13 @@ public class SyncRecipeHandler(
             await uow.BeginTransactionAsync("SapScada");
             await uow.BeginTransactionAsync(request.DbChoice);
 
-            var targetDb = string.Empty;
             // Busca recetas en la Bd principal 
-            var recipeExistDbMain = await recipeQueryDbMain.WhereIncludeMultipleAsync(
+            var recipesExistDbMain = await recipeQueryDbMain.WhereIncludeMultipleAsync(
                 x => x.CommStatus == 1,
                 tracking: true,
                 q => q.Include(x => x.RecipeBoms));
-            if (recipeExistDbMain.Count > 0)
+
+            if (recipesExistDbMain.Count > 0)
             {
                 await logger.LogInfoAsync($"No se encontraron recetas con CommStatus == 1 en la Db: {request.DbChoice}",
                     "Metodo: SyncRecipeHandler");
@@ -57,34 +58,37 @@ public class SyncRecipeHandler(
                 };
             }
 
-            var sourceRecipes = await recipeQueryDbMain.ListAllAsync();
-            var targetRecipes = await recipeQueryDbAux.ListAllAsync();
-
-            // Crear un conjunto con los códigos de recetas ya existentes en la Bd destino
-            var targetCodes = new HashSet<Guid>(targetRecipes.Select(p => p.BillOfMaterialHeaderUuid));
-
-            // Filtrar las recetas que están en origen pero no en destino
-            var missingRecipes = sourceRecipes
-                .Where(p => !targetCodes.Contains(p.BillOfMaterialHeaderUuid))
-                .ToList();
-
-            // Insertar las recetas y sus items faltantes en la Bd destino
-            foreach (var recipe in missingRecipes)
+            // Actualiza o inserta las recetas en la Bd de destino que fueron encontradas en la Bd principal
+            foreach (var recipeNew in recipesExistDbMain) 
             {
-                await recipeCommandDbAux.AddAsync(recipe);
-                await recipeBomCommandDbAux.AddRangeAsync(recipe.RecipeBoms);
+                var recipeExistDbAux = await recipeQueryDbAux.FirstOrDefaultAsync(
+                    x => x.BillOfMaterialHeaderUuid == recipeNew.BillOfMaterialHeaderUuid, 
+                    tracking: true);
+
+                if (recipeExistDbAux == null)
+                {
+                    await recipeCommandDbAux.AddAsync(recipeNew);
+                    await recipeBomCommandDbAux.AddRangeAsync(recipeNew.RecipeBoms);
+                }
+                else
+                {
+                    await recipeBomCommandDbAux.DeleteRangeAsync(recipeExistDbAux.RecipeBoms);
+                    recipeExistDbAux = recipeNew.MapTo<Recipe>();
+                    await recipeCommandDbAux.UpdateAsync(recipeExistDbAux);
+                    await recipeBomCommandDbAux.AddRangeAsync(recipeNew.RecipeBoms);
+                }
             }
 
-            // Actualiza las recetas que fueron ingresadas en la Bd de destino
-            foreach (var confirm in recipeExistDbMain)
+            // Actualiza en la Bd principal las recetas que fueron ingresadas en la Bd de destino
+            foreach (var recipeExist in recipesExistDbMain)
             {
-                confirm.CommStatus = 2;
-                await recipeCommandDbMain.UpdateAsync(confirm);
+                recipeExist.CommStatus = 2;
+                await recipeCommandDbMain.UpdateAsync(recipeExist);
             }
 
             await uow.CommitAllAsync();
 
-            await logger.LogInfoAsync($"Adicion exitosa de las recetas en la Db: {targetDb}", "Metodo: SyncRecipeHandler");
+            await logger.LogInfoAsync($"Adicion exitosa de las recetas en la Db: {request.DbChoice}", "Metodo: SyncRecipeHandler");
             return new Response<SyncRecipeResponse>
             {
                 StatusCode = HttpStatusCode.OK,
