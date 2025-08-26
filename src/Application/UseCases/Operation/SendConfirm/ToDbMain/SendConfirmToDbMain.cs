@@ -1,4 +1,5 @@
-﻿using Application.Interfaces;
+﻿using Application.Helpers;
+using Application.Interfaces;
 using Arq.Core;
 using Arq.Host;
 using Domain.Entities;
@@ -41,7 +42,7 @@ public class SendConfirmToDbMainHandler(
                 tracking: true,
                 q => q.Include(x => x.ProcessOrderConfirmationMaterialMovements));
 
-            if (confirmsExistDbAux.Count > 0)
+            if (confirmsExistDbAux.Count == 0)
             {
                 await logger.LogInfoAsync($"No se encontraron movimientos con CommStatus == 1",
                     "Metodo: SendConfirmToDbMainHandler");
@@ -57,10 +58,15 @@ public class SendConfirmToDbMainHandler(
             }
 
             // Insertar confirmaciones y movimientos en la Bd principal
-            foreach (var confirm in confirmsExistDbAux)
+            foreach (var confirmAux in confirmsExistDbAux)
             {
-                await confirmCommandDbMain.AddAsync(confirm);
-                await movementCommandDbMain.AddRangeAsync(confirm.ProcessOrderConfirmationMaterialMovements);
+                var newConfirm = confirmAux.MapTo<ProcessOrderConfirmation>();
+                await confirmCommandDbMain.AddAsync(newConfirm);
+
+                var newMovements = confirmAux.ProcessOrderConfirmationMaterialMovements
+                    .Select(m => m.MapTo<ProcessOrderConfirmationMaterialMovement>())
+                    .ToList();
+                await movementCommandDbMain.AddRangeAsync(newMovements);
             }
 
             // Actualiza las confirmaciones que fueron ingresados en la Bd de destino
@@ -87,6 +93,7 @@ public class SendConfirmToDbMainHandler(
         }
         catch (Exception ex)
         {
+            await uow.RollbackAllAsync();
             await logger.LogErrorAsync($"Error: {ex.Message}",
                 "Metodo: SendConfirmToDbMainHandler");
             return new Response<SendConfirmToDbMainResponse>

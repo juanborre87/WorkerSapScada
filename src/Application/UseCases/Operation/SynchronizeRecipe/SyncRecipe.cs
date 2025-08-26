@@ -12,7 +12,7 @@ namespace Application.UseCases.Operation.SynchronizeRecipe;
 
 public class SyncRecipe : IRequest<Response<SyncRecipeResponse>>
 {
-    public string DbChoice { get; set; }
+    public List<string> DbChoices { get; set; } = [];
 }
 
 public class SyncRecipeHandler(
@@ -28,15 +28,9 @@ public class SyncRecipeHandler(
 
         var recipeCommandDbMain = uow.CommandRepository<Recipe>("SapScada");
         var recipeQueryDbMain = uow.QueryRepository<Recipe>("SapScada");
-        var recipeCommandDbAux = uow.CommandRepository<Recipe>(request.DbChoice);
-        var recipeQueryDbAux = uow.QueryRepository<Recipe>(request.DbChoice);
-        var recipeBomCommandDbAux = uow.CommandRepository<RecipeBom>(request.DbChoice);
 
         try
         {
-            await uow.BeginTransactionAsync("SapScada");
-            await uow.BeginTransactionAsync(request.DbChoice);
-
             // Busca recetas en la Bd principal 
             var recipesExistDbMain = await recipeQueryDbMain.WhereIncludeMultipleAsync(
                 x => x.CommStatus == 1,
@@ -45,7 +39,7 @@ public class SyncRecipeHandler(
 
             if (recipesExistDbMain.Count > 0)
             {
-                await logger.LogInfoAsync($"No se encontraron recetas con CommStatus == 1 en la Db: {request.DbChoice}",
+                await logger.LogInfoAsync($"No se encontraron recetas con CommStatus == 1 en la Db principal (SapScada)",
                     "Metodo: SyncRecipeHandler");
                 return new Response<SyncRecipeResponse>
                 {
@@ -58,47 +52,87 @@ public class SyncRecipeHandler(
                 };
             }
 
-            // Actualiza o inserta las recetas en la Bd de destino que fueron encontradas en la Bd principal
-            foreach (var recipeNew in recipesExistDbMain) 
-            {
-                var recipeExistDbAux = await recipeQueryDbAux.FirstOrDefaultAsync(
-                    x => x.BillOfMaterialHeaderUuid == recipeNew.BillOfMaterialHeaderUuid, 
-                    tracking: true);
 
-                if (recipeExistDbAux == null)
+            bool allSucceeded = true;
+
+            foreach (var dbChoice in request.DbChoices)
+            {
+                try
                 {
-                    await recipeCommandDbAux.AddAsync(recipeNew);
-                    await recipeBomCommandDbAux.AddRangeAsync(recipeNew.RecipeBoms);
+                    var recipeCommandDbAux = uow.CommandRepository<Recipe>(dbChoice);
+                    var recipeQueryDbAux = uow.QueryRepository<Recipe>(dbChoice);
+                    var recipeBomCommandDbAux = uow.CommandRepository<RecipeBom>(dbChoice);
+
+                    await uow.BeginTransactionAsync("SapScada");
+                    await uow.BeginTransactionAsync(dbChoice);
+
+                    foreach (var recipeNew in recipesExistDbMain)
+                    {
+                        var recipeExistDbAux = await recipeQueryDbAux.FirstOrDefaultAsync(
+                            x => x.BillOfMaterialHeaderUuid == recipeNew.BillOfMaterialHeaderUuid,
+                            tracking: true);
+
+                        if (recipeExistDbAux == null)
+                        {
+                            var newRecipe = recipeNew.MapTo<Recipe>();
+                            await recipeCommandDbAux.AddAsync(newRecipe);
+                            var newRecipeBoms = recipeNew.RecipeBoms
+                                .Select(c => c.MapTo<RecipeBom>())
+                                .ToList();
+                            await recipeBomCommandDbAux.AddRangeAsync(newRecipeBoms);
+                        }
+                        else
+                        {
+                            await recipeBomCommandDbAux.DeleteRangeAsync(recipeExistDbAux.RecipeBoms);
+                            recipeExistDbAux = recipeNew.MapTo<Recipe>();
+                            await recipeCommandDbAux.UpdateAsync(recipeExistDbAux);
+                            var newRecipeBoms = recipeNew.RecipeBoms
+                                .Select(c => c.MapTo<RecipeBom>())
+                                .ToList();
+                            await recipeBomCommandDbAux.AddRangeAsync(newRecipeBoms);
+                        }
+                    }
+
+                    await uow.CommitAllAsync();
+
+                    await logger.LogInfoAsync($"Adición exitosa de las recetas en la Db: {dbChoice}",
+                        "Metodo: SyncRecipeHandler");
                 }
-                else
+                catch (Exception ex)
                 {
-                    await recipeBomCommandDbAux.DeleteRangeAsync(recipeExistDbAux.RecipeBoms);
-                    recipeExistDbAux = recipeNew.MapTo<Recipe>();
-                    await recipeCommandDbAux.UpdateAsync(recipeExistDbAux);
-                    await recipeBomCommandDbAux.AddRangeAsync(recipeNew.RecipeBoms);
+                    allSucceeded = false;
+                    await uow.RollbackAsync(dbChoice);
+                    await logger.LogErrorAsync($"Error en Db: {dbChoice} -> {ex.Message}",
+                        "Metodo: SyncRecipeHandler");
                 }
             }
 
-            // Actualiza en la Bd principal las recetas que fueron ingresadas en la Bd de destino
-            foreach (var recipeExist in recipesExistDbMain)
+            // Si todas las bases fueron sincronizadas correctamente, actualizamos en la principal
+            if (allSucceeded)
             {
-                recipeExist.CommStatus = 2;
-                await recipeCommandDbMain.UpdateAsync(recipeExist);
+                foreach (var recipeExist in recipesExistDbMain)
+                {
+                    recipeExist.CommStatus = 2;
+                    await recipeCommandDbMain.UpdateAsync(recipeExist);
+                }
+
+                await uow.CommitAllAsync();
+
+                await logger.LogInfoAsync("CommStatus actualizado en la Db principal (SapScada)",
+                    "Metodo: SyncRecipeHandler");
             }
 
-            await uow.CommitAllAsync();
-
-            await logger.LogInfoAsync($"Adicion exitosa de las recetas en la Db: {request.DbChoice}", "Metodo: SyncRecipeHandler");
             return new Response<SyncRecipeResponse>
             {
                 StatusCode = HttpStatusCode.OK,
                 Content = new SyncRecipeResponse
                 {
-                    Result = true,
-                    Message = string.Empty
+                    Result = allSucceeded,
+                    Message = allSucceeded
+                        ? "Sincronización completada en todas las bases y recetas actualizadas en SapScada"
+                        : "Sincronización parcial: algunas bases fallaron, revisar logs"
                 }
             };
-
         }
         catch (Exception ex)
         {

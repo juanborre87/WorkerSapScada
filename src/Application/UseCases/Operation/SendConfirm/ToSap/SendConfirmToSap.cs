@@ -41,7 +41,7 @@ public class SendConfirmToSapHandler(
                             .ThenInclude(o => o.ProcessOrderComponents)
                           .Include(x => x.ProcessOrderConfirmationMaterialMovements));
 
-            if (confirmsExistDbMain.Count > 0)
+            if (confirmsExistDbMain.Count == 0)
             {
                 await logger.LogInfoAsync($"No se encontraron confirmaciones con CommStatus == 1",
                     "Metodo: SendConfirmToSapHandler");
@@ -56,31 +56,66 @@ public class SendConfirmToSapHandler(
                 };
             }
 
-            // Mapea los valores necesarios para enviarlos a Sap
+            var allSucceeded = true;
+
             foreach (var confirm in confirmsExistDbMain)
             {
-                var sapRequest = SapConfirmationMapper.MapToDto(confirm);
-                var result = await sapOrderService.SendOrderConfirmationAsync(sapRequest);
-                confirm.CommStatus = 2;
-                confirm.Sapresponse = result.Response;
-                await confirmCommandDbMain.UpdateAsync(confirm);
-                await logger.LogInfoAsync($"Actualizacion exitosa de la confirmacion {confirm.IdGuid} en la Db: SapScadaMain",
-                    "Metodo: SendConfirmToSapHandler");
+                try
+                {
+                    var sapRequest = SapConfirmationMapper.MapToDto(confirm);
+                    var result = await sapOrderService.SendOrderConfirmationAsync(sapRequest);
+
+                    confirm.CommStatus = 2;
+                    confirm.Sapresponse = result.Response;
+
+                    await confirmCommandDbMain.UpdateAsync(confirm);
+
+                    await logger.LogInfoAsync(
+                        $"Confirmación {confirm.IdGuid} enviada correctamente a SAP y actualizada en SapScada",
+                        "Metodo: SendConfirmToSapHandler");
+                }
+                catch (Exception exItem)
+                {
+                    allSucceeded = false;
+
+                    await logger.LogErrorAsync(
+                        $"Error al procesar confirmación {confirm.IdGuid}: {exItem.Message}",
+                        "Metodo: SendConfirmToSapHandler");
+                }
             }
 
-            await uow.CommitAllAsync();
-
-            await logger.LogInfoAsync($"Adicion exitosa de las ordenes y componentes en la Db: " +
-                $"{request.DbChoice}", "Metodo: SyncProductHandler");
-            return new Response<SendConfirmToSapResponse>
+            if (allSucceeded)
             {
-                StatusCode = HttpStatusCode.OK,
-                Content = new SendConfirmToSapResponse
+                await uow.CommitAllAsync();
+
+                await logger.LogInfoAsync(
+                    $"Todas las confirmaciones se enviaron exitosamente a SAP y fueron actualizadas en SapScada",
+                    "Metodo: SendConfirmToSapHandler");
+
+                return new Response<SendConfirmToSapResponse>
                 {
-                    Result = true,
-                    Message = string.Empty
-                }
-            };
+                    StatusCode = HttpStatusCode.OK,
+                    Content = new SendConfirmToSapResponse
+                    {
+                        Result = true,
+                        Message = "Todas las confirmaciones fueron enviadas correctamente"
+                    }
+                };
+            }
+            else
+            {
+                await uow.RollbackAllAsync();
+                await logger.LogInfoAsync("Algunas confirmaciones fallaron al enviarse a SAP. No se guardaron los cambios.");
+                return new Response<SendConfirmToSapResponse>
+                {
+                    StatusCode = HttpStatusCode.InternalServerError,
+                    Content = new SendConfirmToSapResponse
+                    {
+                        Result = false,
+                        Message = string.Empty
+                    }
+                };
+            }
 
         }
         catch (Exception ex)

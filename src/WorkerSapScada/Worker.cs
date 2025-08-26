@@ -33,15 +33,12 @@ public class Worker : BackgroundService
 
             try
             {
-                await scopedService.SyncProduct("SapScada1");
-                await Task.Delay(TimeSpan.FromSeconds(delayTime), stoppingToken);
-                await scopedService.SyncProduct("SapScada2");
+                var dbChoices = new List<string> { "SapScada1", "SapScada2" };
+                await scopedService.SyncProduct(dbChoices);
                 await Task.Delay(TimeSpan.FromSeconds(delayTime), stoppingToken);
 
 
-                await scopedService.SyncRecipe("SapScada1");
-                await Task.Delay(TimeSpan.FromSeconds(delayTime), stoppingToken);
-                await scopedService.SyncRecipe("SapScada2");
+                await scopedService.SyncRecipe(dbChoices);
                 await Task.Delay(TimeSpan.FromSeconds(delayTime), stoppingToken);
 
 
@@ -73,35 +70,35 @@ public interface IScopedService
     /// <summary>
     /// Metodo que sincroniza los productos en la Bd indicada
     /// </summary>
-    /// <param name="DbChoice">Bd de la cual se va a enviar el registro</param>
+    /// <param name="DbChoices"></param>
     /// <returns></returns>
-    Task<bool> SyncProduct(string DbChoice);
+    Task<bool> SyncProduct(List<string> DbChoices);
+
+    /// <summary>
+    /// Metodo que sincroniza las recetas en la Bd indicada
+    /// </summary>
+    /// <param name="DbChoices"></param>
+    /// <returns></returns>
+    Task<bool> SyncRecipe(List<string> DbChoices);
 
     /// <summary>
     /// Metodo que envía la orden a las Bd del Scada
     /// </summary>
-    /// <param name="DbChoice">Bd de la cual se va a enviar el registro</param>
-    /// <returns></returns>
-    Task<bool> SyncRecipe(string DbChoice);
-
-    /// <summary>
-    /// Metodo que envía la orden a las Bd del Scada
-    /// </summary>
-    /// <param name="DbChoice">Bd de la cual se va a enviar el registro</param>
+    /// <param name="DbChoice"></param>
     /// <returns></returns>
     Task<bool> OrderToDbScada(string DbChoice);
 
     /// <summary>
     /// Metodo que envía la confirmacion a la Bd principal
     /// </summary>
-    /// <param name="DbChoice">Bd de la cual se va a enviar el registro</param>
+    /// <param name="DbChoice"></param>
     /// <returns></returns>
     Task<bool> ConfirmToDbMain(string DbChoice);
 
     /// <summary>
     /// Metodo que envía la confirmacion a Sap
     /// </summary>
-    /// <param name="DbChoice">Bd de la cual se va a enviar el registro</param>
+    /// <param name="DbChoice"></param>
     /// <returns></returns>
     Task<bool> ConfirmToSap(string DbChoice);
 }
@@ -135,15 +132,15 @@ public class ScopedService : BaseApiController, IScopedService
         return result.Content.Result;
     }
 
-    public async Task<bool> SyncProduct(string DbChoice)
+    public async Task<bool> SyncProduct(List<string> DbChoices)
     {
-        var result = await _mediator.Send(new SyncProduct() { DbChoice = DbChoice });
+        var result = await _mediator.Send(new SyncProduct() { DbChoices = DbChoices });
         return result.Content.Result;
     }
 
-    public async Task<bool> SyncRecipe(string DbChoice)
+    public async Task<bool> SyncRecipe(List<string> DbChoices)
     {
-        var result = await _mediator.Send(new SyncRecipe() { DbChoice = DbChoice });
+        var result = await _mediator.Send(new SyncRecipe() { DbChoices = DbChoices });
         return result.Content.Result;
     }
 }

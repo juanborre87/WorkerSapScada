@@ -51,11 +51,11 @@ public class SendOrderToDbScadaHandler(
                 tracking: true,
                 q => q.Include(x => x.ProcessOrderComponents));
 
-            if (ordersExistDbMain.Count > 0)
+            if (ordersExistDbMain.Count == 0)
             {
                 await logger.LogInfoAsync($"No se encontraron ordenes con " +
                     $"CommStatus == 1 & destinoRecetaDeControl == " +
-                    $"{destinoRecetaDeControl} en la Db: {request.DbChoice}",
+                    $"{destinoRecetaDeControl} en la Db principal (SapScada)",
                     "Metodo: SendOrderToDbScadaHandler");
                 return new Response<SendOrderToDbScadaResponse>
                 {
@@ -69,7 +69,7 @@ public class SendOrderToDbScadaHandler(
             }
 
 
-            // Actualiza o inserta ordenes y componentes en la Bd de destino que fueron encontradas en la Bd principal
+            // Actualiza o inserta ordenes y componentes en la Bd de destino
             foreach (var orderNew in ordersExistDbMain)
             {
                 var orderExistDbAux = await orderQueryDbAux.FirstOrDefaultAsync(
@@ -78,15 +78,22 @@ public class SendOrderToDbScadaHandler(
 
                 if (orderExistDbAux == null)
                 {
-                    await orderCommandDbAux.AddAsync(orderNew);
-                    await componentCommandDbAux.AddRangeAsync(orderNew.ProcessOrderComponents);
+                    var newOrder = orderNew.MapTo<ProcessOrder>();
+                    await orderCommandDbAux.AddAsync(newOrder);
+                    var newComponents = orderNew.ProcessOrderComponents
+                        .Select(c => c.MapTo<ProcessOrderComponent>())
+                        .ToList();
+                    await componentCommandDbAux.AddRangeAsync(newComponents);
                 }
                 else
                 {
                     await componentCommandDbAux.DeleteRangeAsync(orderExistDbAux.ProcessOrderComponents);
                     orderExistDbAux = orderNew.MapTo<ProcessOrder>();
                     await orderCommandDbAux.UpdateAsync(orderExistDbAux);
-                    await componentCommandDbAux.AddRangeAsync(orderNew.ProcessOrderComponents);
+                    var newComponents = orderNew.ProcessOrderComponents
+                        .Select(c => c.MapTo<ProcessOrderComponent>())
+                        .ToList();
+                    await componentCommandDbAux.AddRangeAsync(newComponents);
                 }
             }
 
@@ -99,7 +106,7 @@ public class SendOrderToDbScadaHandler(
             await uow.CommitAllAsync();
 
             await logger.LogInfoAsync($"Adicion exitosa de las ordenes y componentes en la Db: " +
-                $"{request.DbChoice}", "Metodo: SyncProductHandler");
+                $"{request.DbChoice}", "Metodo: SendOrderToDbScadaHandler");
             return new Response<SendOrderToDbScadaResponse>
             {
                 StatusCode = HttpStatusCode.OK,

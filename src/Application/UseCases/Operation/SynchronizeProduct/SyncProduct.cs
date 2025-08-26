@@ -11,7 +11,7 @@ namespace Application.UseCases.Operation.SynchronizeProduct;
 
 public class SyncProduct : IRequest<Response<SyncProductResponse>>
 {
-    public string DbChoice { get; set; }
+    public List<string> DbChoices { get; set; } = new();
 }
 
 public class SyncProductHandler(
@@ -27,15 +27,10 @@ public class SyncProductHandler(
             "Metodo: SyncProductHandler");
         var productCommandDbMain = uow.CommandRepository<Product>("SapScada");
         var productQueryDbMain = uow.QueryRepository<Product>("SapScada");
-        var productCommandDbAux = uow.CommandRepository<Product>(request.DbChoice);
-        var productQueryDbAux = uow.QueryRepository<Product>(request.DbChoice);
 
         try
         {
-            await uow.BeginTransactionAsync("SapScada");
-            await uow.BeginTransactionAsync(request.DbChoice);
-
-            // Busca productos en la Bd principal 
+            // Busca productos en la Db principal 
             var productsExistDbMain = await productQueryDbMain.WhereAsync(
                 x => x.CommStatus == 1, 
                 tracking:true);
@@ -43,7 +38,7 @@ public class SyncProductHandler(
             if (productsExistDbMain.Count > 0)
             {
                 await logger.LogInfoAsync($"No se encontraron productos " +
-                    $"con CommStatus == 1 en la Db: {request.DbChoice}",
+                    $"con CommStatus == 1 en la Db principal (SapScada)",
                     "Metodo: SyncProductHandler");
                 return new Response<SyncProductResponse>
                 {
@@ -56,45 +51,77 @@ public class SyncProductHandler(
                 };
             }
 
-            // Actualiza o inserta los productos en la Bd de destino que fueron encontradas en la Bd principal
-            foreach (var productNew in productsExistDbMain)
-            {
-                var productExistDbAux = await productQueryDbAux.FirstOrDefaultAsync(
-                    x => x.ProductCode == productNew.ProductCode,
-                    tracking: true);
 
-                if (productExistDbAux == null)
+            bool allSucceeded = true;
+
+            foreach (var dbChoice in request.DbChoices)
+            {
+                try
                 {
-                    await productCommandDbAux.AddAsync(productNew);
+                    var productCommandDbAux = uow.CommandRepository<Product>(dbChoice);
+                    var productQueryDbAux = uow.QueryRepository<Product>(dbChoice);
+
+                    await uow.BeginTransactionAsync("SapScada");
+                    await uow.BeginTransactionAsync(dbChoice);
+
+                    foreach (var productNew in productsExistDbMain)
+                    {
+                        var productExistDbAux = await productQueryDbAux.FirstOrDefaultAsync(
+                            x => x.ProductCode == productNew.ProductCode,
+                            tracking: true);
+
+                        if (productExistDbAux == null)
+                        {
+                            var newProduct = productNew.MapTo<Product>();
+                            await productCommandDbAux.AddAsync(newProduct);
+                        }
+                        else
+                        {
+                            productExistDbAux = productNew.MapTo<Product>();
+                            await productCommandDbAux.UpdateAsync(productExistDbAux);
+                        }
+                    }
+
+                    await uow.CommitAllAsync();
+
+                    await logger.LogInfoAsync($"Adicion exitosa de los productos en la Db: {dbChoice}",
+                        "Metodo: SyncProductHandler");
                 }
-                else
+                catch (Exception ex)
                 {
-                    productExistDbAux = productNew.MapTo<Product>();
-                    await productCommandDbAux.UpdateAsync(productExistDbAux);
+                    allSucceeded = false;
+                    await uow.RollbackAsync(dbChoice);
+                    await logger.LogErrorAsync($"Error en Db: {dbChoice} -> {ex.Message}",
+                        "Metodo: SyncProductHandler");
                 }
             }
 
-            // Actualiza los productos que fueron ingresados en la Bd de destino
-            foreach (var product in productsExistDbMain)
+            // Si todas las bases fueron sincronizadas correctamente, actualizamos en la principal
+            if (allSucceeded)
             {
-                product.CommStatus = 2;
-                await productCommandDbMain.UpdateAsync(product);
+                foreach (var product in productsExistDbMain)
+                {
+                    product.CommStatus = 2;
+                    await productCommandDbMain.UpdateAsync(product);
+                }
+
+                await uow.CommitAllAsync();
+
+                await logger.LogInfoAsync("CommStatus actualizado en la Db principal (SapScada)",
+                    "Metodo: SyncProductHandler");
             }
 
-            await uow.CommitAllAsync();
-
-            await logger.LogInfoAsync($"Adicion exitosa de los productos en la Db: " +
-                $"{request.DbChoice}", "Metodo: SyncProductHandler");
             return new Response<SyncProductResponse>
             {
                 StatusCode = HttpStatusCode.OK,
                 Content = new SyncProductResponse
                 {
-                    Result = true,
-                    Message = string.Empty
+                    Result = allSucceeded,
+                    Message = allSucceeded
+                        ? "Sincronización completada en todas las bases y productos actualizados en SapScada"
+                        : "Sincronización parcial: algunas bases fallaron, revisar logs"
                 }
             };
-
         }
         catch (Exception ex)
         {
