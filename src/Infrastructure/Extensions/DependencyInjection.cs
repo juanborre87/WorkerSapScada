@@ -17,9 +17,9 @@ public static class DependencyInjection
         services.AddDbContext<SapScadaMainDbContext>(
             options => options.UseSqlServer(configuration.GetConnectionString("SapScadaMain")),
             ServiceLifetime.Scoped);
-        //services.AddDbContext<SapScada1DbContext>(
-        //    options => options.UseSqlServer(configuration.GetConnectionString("SapScada1")),
-        //    ServiceLifetime.Scoped);
+        services.AddDbContext<SapScada1DbContext>(
+            options => options.UseSqlServer(configuration.GetConnectionString("SapScada1")),
+            ServiceLifetime.Scoped);
         services.AddDbContext<SapScada2DbContext>(
             options => options.UseSqlServer(configuration.GetConnectionString("SapScada2")),
             ServiceLifetime.Scoped);
@@ -29,7 +29,7 @@ public static class DependencyInjection
         services.AddCQRS(builder =>
         {
             builder.AddContext<SapScadaMainDbContext>("SapScadaMain");
-            //builder.AddContext<SapScada1DbContext>("SapScada1");
+            builder.AddContext<SapScada1DbContext>("SapScada1");
             builder.AddContext<SapScada2DbContext>("SapScada2");
         });
 
