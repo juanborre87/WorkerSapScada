@@ -54,7 +54,7 @@ public class Worker : BackgroundService
                 await Task.Delay(TimeSpan.FromSeconds(delayTime), stoppingToken);
 
 
-                await scopedService.ConfirmToSap("SapScadaMain");
+                await scopedService.ConfirmToSap("SapScada");
                 await Task.Delay(TimeSpan.FromSeconds(delayTime), stoppingToken);
             }
             catch (Exception ex) 

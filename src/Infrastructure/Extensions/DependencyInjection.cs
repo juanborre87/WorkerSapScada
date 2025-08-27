@@ -15,7 +15,7 @@ public static class DependencyInjection
     public static IServiceCollection AddInfrastructure(this IServiceCollection services, IConfiguration configuration)
     {
         services.AddDbContext<SapScadaMainDbContext>(
-            options => options.UseSqlServer(configuration.GetConnectionString("SapScadaMain")),
+            options => options.UseSqlServer(configuration.GetConnectionString("SapScada")),
             ServiceLifetime.Scoped);
         services.AddDbContext<SapScada1DbContext>(
             options => options.UseSqlServer(configuration.GetConnectionString("SapScada1")),
@@ -28,7 +28,7 @@ public static class DependencyInjection
 
         services.AddCQRS(builder =>
         {
-            builder.AddContext<SapScadaMainDbContext>("SapScadaMain");
+            builder.AddContext<SapScadaMainDbContext>("SapScada");
             builder.AddContext<SapScada1DbContext>("SapScada1");
             builder.AddContext<SapScada2DbContext>("SapScada2");
         });
