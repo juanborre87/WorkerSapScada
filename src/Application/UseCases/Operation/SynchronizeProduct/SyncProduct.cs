@@ -33,9 +33,9 @@ public class SyncProductHandler(
             // Busca productos en la Db principal 
             var productsExistDbMain = await productQueryDbMain.WhereAsync(
                 x => x.CommStatus == 1, 
-                tracking:true);
+                tracking: true);
 
-            if (productsExistDbMain.Count > 0)
+            if (productsExistDbMain.Count == 0)
             {
                 await logger.LogInfoAsync($"No se encontraron productos " +
                     $"con CommStatus == 1 en la Db principal (SapScada)",
@@ -61,7 +61,6 @@ public class SyncProductHandler(
                     var productCommandDbAux = uow.CommandRepository<Product>(dbChoice);
                     var productQueryDbAux = uow.QueryRepository<Product>(dbChoice);
 
-                    await uow.BeginTransactionAsync("SapScada");
                     await uow.BeginTransactionAsync(dbChoice);
 
                     foreach (var productNew in productsExistDbMain)
@@ -77,12 +76,12 @@ public class SyncProductHandler(
                         }
                         else
                         {
-                            productExistDbAux = productNew.MapTo<Product>();
+                            productNew.MapToExisting(productExistDbAux);
                             await productCommandDbAux.UpdateAsync(productExistDbAux);
                         }
                     }
 
-                    await uow.CommitAllAsync();
+                    await uow.CommitAsync(dbChoice);
 
                     await logger.LogInfoAsync($"Adicion exitosa de los productos en la Db: {dbChoice}",
                         "Metodo: SyncProductHandler");
@@ -99,13 +98,13 @@ public class SyncProductHandler(
             // Si todas las bases fueron sincronizadas correctamente, actualizamos en la principal
             if (allSucceeded)
             {
+                await uow.BeginTransactionAsync("SapScada");
                 foreach (var product in productsExistDbMain)
                 {
                     product.CommStatus = 2;
                     await productCommandDbMain.UpdateAsync(product);
                 }
-
-                await uow.CommitAllAsync();
+                await uow.CommitAsync("SapScada");
 
                 await logger.LogInfoAsync("CommStatus actualizado en la Db principal (SapScada)",
                     "Metodo: SyncProductHandler");
@@ -126,14 +125,14 @@ public class SyncProductHandler(
         catch (Exception ex)
         {
             await uow.RollbackAllAsync();
-            await logger.LogErrorAsync($"Error: {ex.Message}","Metodo: SyncProductHandler");
+            await logger.LogErrorAsync($"Error: {ex}","Metodo: SyncProductHandler");
             return new Response<SyncProductResponse>
             {
                 StatusCode = HttpStatusCode.InternalServerError,
                 Content = new SyncProductResponse
                 {
                     Result = false,
-                    Message = $"Error: {ex.Message}"
+                    Message = $"Error: {ex}"
                 }
             };
         }

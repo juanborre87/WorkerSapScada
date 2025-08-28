@@ -90,14 +90,14 @@ public class UnitOfWork : IUnitOfWork, IDisposable
 
     public async Task RollbackAsync(string dbChoice)
     {
-        foreach (var kv in _transactions)
+        if (_transactions.TryGetValue(dbChoice, out var tx))
         {
-            var tx = kv.Value;
             await tx.RollbackAsync();
             await tx.DisposeAsync();
             _dbContextProvider.DisposeScopeFor(dbChoice);
+
+            _transactions.TryRemove(dbChoice, out _);
         }
-        _transactions.TryRemove(dbChoice, out _);
     }
 
     public async Task RollbackAllAsync()
@@ -123,6 +123,7 @@ public class UnitOfWork : IUnitOfWork, IDisposable
         }
         _transactions.Clear();
 
+        _dbContextProvider.DisposeAllScopes();
     }
 
 }

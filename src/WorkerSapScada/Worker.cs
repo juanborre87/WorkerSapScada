@@ -1,3 +1,4 @@
+using Application.Interfaces;
 using Application.UseCases.Operation.SendConfirm.ToDbMain;
 using Application.UseCases.Operation.SendConfirm.ToSap;
 using Application.UseCases.Operation.SendOrder.ToDbScada;
@@ -11,14 +12,16 @@ namespace WorkerSapScada;
 public class Worker : BackgroundService
 {
     private readonly ILogger<Worker> _logger;
+    private readonly IFileLogger _fileLogger;
     private readonly IServiceScopeFactory _scopeFactory;
     private readonly IConfiguration _configuration;
 
-    public Worker(ILogger<Worker> logger, IServiceScopeFactory scopeFactory, IConfiguration configuration)
+    public Worker(ILogger<Worker> logger, IServiceScopeFactory scopeFactory, IConfiguration configuration, IFileLogger fileLogger)
     {
         _logger = logger;
         _scopeFactory = scopeFactory ?? throw new ArgumentNullException(nameof(scopeFactory));
         _configuration = configuration;
+        _fileLogger = fileLogger;
     }
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
@@ -34,18 +37,18 @@ public class Worker : BackgroundService
             try
             {
                 var dbChoices = new List<string> { "SapScada1", "SapScada2" };
-                await scopedService.SyncProduct(dbChoices);
-                await Task.Delay(TimeSpan.FromSeconds(delayTime), stoppingToken);
+                //await scopedService.SyncProduct(dbChoices);
+                //await Task.Delay(TimeSpan.FromSeconds(delayTime), stoppingToken);
 
 
-                await scopedService.SyncRecipe(dbChoices);
-                await Task.Delay(TimeSpan.FromSeconds(delayTime), stoppingToken);
+                //await scopedService.SyncRecipe(dbChoices);
+                //await Task.Delay(TimeSpan.FromSeconds(delayTime), stoppingToken);
 
 
-                await scopedService.OrderToDbScada("SapScada1");
-                await Task.Delay(TimeSpan.FromSeconds(delayTime), stoppingToken);
-                await scopedService.OrderToDbScada("SapScada2");
-                await Task.Delay(TimeSpan.FromSeconds(delayTime), stoppingToken);
+                //await scopedService.OrderToDbScada("SapScada1");
+                //await Task.Delay(TimeSpan.FromSeconds(delayTime), stoppingToken);
+                //await scopedService.OrderToDbScada("SapScada2");
+                //await Task.Delay(TimeSpan.FromSeconds(delayTime), stoppingToken);
 
 
                 await scopedService.ConfirmToDbMain("SapScada1");
@@ -54,12 +57,12 @@ public class Worker : BackgroundService
                 await Task.Delay(TimeSpan.FromSeconds(delayTime), stoppingToken);
 
 
-                await scopedService.ConfirmToSap("SapScada");
-                await Task.Delay(TimeSpan.FromSeconds(delayTime), stoppingToken);
+                //await scopedService.ConfirmToSap("SapScada");
+                //await Task.Delay(TimeSpan.FromSeconds(delayTime), stoppingToken);
             }
-            catch (Exception ex) 
+            catch (Exception ex)
             {
-                Console.WriteLine(ex.ToString());
+                await _fileLogger.LogErrorAsync($"Error: {ex}", "Metodo: ExecuteAsync");
             }
         }
     }

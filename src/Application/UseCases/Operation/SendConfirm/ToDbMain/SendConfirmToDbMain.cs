@@ -34,7 +34,6 @@ public class SendConfirmToDbMainHandler(
         try
         {
             await uow.BeginTransactionAsync("SapScada");
-            await uow.BeginTransactionAsync(request.DbChoice);
 
             // Buscar confirmaciones en la Bd aux
             var confirmsExistDbAux = await confirmQueryDbAux.WhereIncludeMultipleAsync(
@@ -62,21 +61,17 @@ public class SendConfirmToDbMainHandler(
             {
                 var newConfirm = confirmAux.MapTo<ProcessOrderConfirmation>();
                 await confirmCommandDbMain.AddAsync(newConfirm);
-
-                var newMovements = confirmAux.ProcessOrderConfirmationMaterialMovements
-                    .Select(m => m.MapTo<ProcessOrderConfirmationMaterialMovement>())
-                    .ToList();
-                await movementCommandDbMain.AddRangeAsync(newMovements);
             }
+            await uow.CommitAsync("SapScada");
 
-            // Actualiza las confirmaciones que fueron ingresados en la Bd de destino
+            // Actualiza las confirmaciones que fueron sincronizadas
+            await uow.BeginTransactionAsync(request.DbChoice);
             foreach (var confirm in confirmsExistDbAux)
             {
                 confirm.CommStatus = 2;
                 await confirmAuxCommandDbAux.UpdateAsync(confirm);
             }
-
-            await uow.CommitAllAsync();
+            await uow.CommitAsync(request.DbChoice);
 
             await logger.LogInfoAsync($"Adicion exitosa de las confirmaciones y movimientos en la Db: " +
                 $"{request.DbChoice}", "Metodo: SendConfirmToDbMainHandler");
@@ -94,7 +89,7 @@ public class SendConfirmToDbMainHandler(
         catch (Exception ex)
         {
             await uow.RollbackAllAsync();
-            await logger.LogErrorAsync($"Error: {ex.Message}",
+            await logger.LogErrorAsync($"Error: {ex}",
                 "Metodo: SendConfirmToDbMainHandler");
             return new Response<SendConfirmToDbMainResponse>
             {
@@ -102,7 +97,7 @@ public class SendConfirmToDbMainHandler(
                 Content = new SendConfirmToDbMainResponse
                 {
                     Result = false,
-                    Message = $"Error: {ex.Message}"
+                    Message = $"Error: {ex}"
                 }
             };
         }

@@ -34,7 +34,6 @@ public class SendOrderToDbScadaHandler(
 
         try
         {
-            await uow.BeginTransactionAsync("SapScada");
             await uow.BeginTransactionAsync(request.DbChoice);
 
             int destinoRecetaDeControl = request.DbChoice switch
@@ -72,38 +71,34 @@ public class SendOrderToDbScadaHandler(
             // Actualiza o inserta ordenes y componentes en la Bd de destino
             foreach (var orderNew in ordersExistDbMain)
             {
-                var orderExistDbAux = await orderQueryDbAux.FirstOrDefaultAsync(
+                var orderExistDbAux = await orderQueryDbAux.FirstOrDefaultIncludeMultipleAsync(
                     x => x.ManufacturingOrder == orderNew.ManufacturingOrder,
-                    tracking: true);
+                    tracking: true,
+                    q => q.Include(x => x.ProcessOrderComponents));
 
                 if (orderExistDbAux == null)
                 {
                     var newOrder = orderNew.MapTo<ProcessOrder>();
                     await orderCommandDbAux.AddAsync(newOrder);
-                    var newComponents = orderNew.ProcessOrderComponents
-                        .Select(c => c.MapTo<ProcessOrderComponent>())
-                        .ToList();
-                    await componentCommandDbAux.AddRangeAsync(newComponents);
                 }
                 else
                 {
                     await componentCommandDbAux.DeleteRangeAsync(orderExistDbAux.ProcessOrderComponents);
-                    orderExistDbAux = orderNew.MapTo<ProcessOrder>();
+                    orderNew.MapToExisting(orderExistDbAux);
                     await orderCommandDbAux.UpdateAsync(orderExistDbAux);
-                    var newComponents = orderNew.ProcessOrderComponents
-                        .Select(c => c.MapTo<ProcessOrderComponent>())
-                        .ToList();
-                    await componentCommandDbAux.AddRangeAsync(newComponents);
                 }
+
+                await uow.CommitAsync(request.DbChoice);
             }
 
             // Actualiza los productos que fueron ingresados en la Bd de destino
+            await uow.BeginTransactionAsync("SapScada");
             foreach (var order in ordersExistDbMain)
             {
                 order.CommStatus = 2;
                 await orderCommandDbMain.UpdateAsync(order);
             }
-            await uow.CommitAllAsync();
+            await uow.CommitAsync("SapScada");
 
             await logger.LogInfoAsync($"Adicion exitosa de las ordenes y componentes en la Db: " +
                 $"{request.DbChoice}", "Metodo: SendOrderToDbScadaHandler");
@@ -121,7 +116,7 @@ public class SendOrderToDbScadaHandler(
         catch (Exception ex)
         {
             await uow.RollbackAllAsync();
-            await logger.LogErrorAsync($"Error: {ex.Message}",
+            await logger.LogErrorAsync($"Error: {ex}",
                 "Metodo: SendOrderToDbScadaHandler");
             return new Response<SendOrderToDbScadaResponse>
             {
@@ -129,7 +124,7 @@ public class SendOrderToDbScadaHandler(
                 Content = new SendOrderToDbScadaResponse
                 {
                     Result = false,
-                    Message = $"Error: {ex.Message}"
+                    Message = $"Error: {ex}"
                 }
             };
         }

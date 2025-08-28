@@ -121,7 +121,7 @@ public class SendConfirmToSapHandler(
         catch (Exception ex)
         {
             await uow.RollbackAllAsync();
-            await logger.LogErrorAsync($"Error: {ex.Message}",
+            await logger.LogErrorAsync($"Error: {ex}",
                 "Metodo: SendConfirmToSapHandler");
             return new Response<SendConfirmToSapResponse>
             {
@@ -129,7 +129,7 @@ public class SendConfirmToSapHandler(
                 Content = new SendConfirmToSapResponse
                 {
                     Result = false,
-                    Message = $"Error: {ex.Message}"
+                    Message = $"Error: {ex}"
                 }
             };
         }

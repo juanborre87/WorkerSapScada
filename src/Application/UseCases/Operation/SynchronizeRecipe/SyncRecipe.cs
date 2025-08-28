@@ -37,7 +37,7 @@ public class SyncRecipeHandler(
                 tracking: true,
                 q => q.Include(x => x.RecipeBoms));
 
-            if (recipesExistDbMain.Count > 0)
+            if (recipesExistDbMain.Count == 0)
             {
                 await logger.LogInfoAsync($"No se encontraron recetas con CommStatus == 1 en la Db principal (SapScada)",
                     "Metodo: SyncRecipeHandler");
@@ -63,37 +63,29 @@ public class SyncRecipeHandler(
                     var recipeQueryDbAux = uow.QueryRepository<Recipe>(dbChoice);
                     var recipeBomCommandDbAux = uow.CommandRepository<RecipeBom>(dbChoice);
 
-                    await uow.BeginTransactionAsync("SapScada");
                     await uow.BeginTransactionAsync(dbChoice);
 
                     foreach (var recipeNew in recipesExistDbMain)
                     {
-                        var recipeExistDbAux = await recipeQueryDbAux.FirstOrDefaultAsync(
+                        var recipeExistDbAux = await recipeQueryDbAux.FirstOrDefaultIncludeMultipleAsync(
                             x => x.BillOfMaterialHeaderUuid == recipeNew.BillOfMaterialHeaderUuid,
-                            tracking: true);
+                            tracking: true,
+                            q => q.Include(x => x.RecipeBoms));
 
                         if (recipeExistDbAux == null)
                         {
                             var newRecipe = recipeNew.MapTo<Recipe>();
                             await recipeCommandDbAux.AddAsync(newRecipe);
-                            var newRecipeBoms = recipeNew.RecipeBoms
-                                .Select(c => c.MapTo<RecipeBom>())
-                                .ToList();
-                            await recipeBomCommandDbAux.AddRangeAsync(newRecipeBoms);
                         }
                         else
                         {
                             await recipeBomCommandDbAux.DeleteRangeAsync(recipeExistDbAux.RecipeBoms);
-                            recipeExistDbAux = recipeNew.MapTo<Recipe>();
+                            recipeNew.MapToExisting(recipeExistDbAux);
                             await recipeCommandDbAux.UpdateAsync(recipeExistDbAux);
-                            var newRecipeBoms = recipeNew.RecipeBoms
-                                .Select(c => c.MapTo<RecipeBom>())
-                                .ToList();
-                            await recipeBomCommandDbAux.AddRangeAsync(newRecipeBoms);
                         }
                     }
 
-                    await uow.CommitAllAsync();
+                    await uow.CommitAsync(dbChoice);
 
                     await logger.LogInfoAsync($"Adición exitosa de las recetas en la Db: {dbChoice}",
                         "Metodo: SyncRecipeHandler");
@@ -110,13 +102,13 @@ public class SyncRecipeHandler(
             // Si todas las bases fueron sincronizadas correctamente, actualizamos en la principal
             if (allSucceeded)
             {
+                await uow.BeginTransactionAsync("SapScada");
                 foreach (var recipeExist in recipesExistDbMain)
                 {
                     recipeExist.CommStatus = 2;
                     await recipeCommandDbMain.UpdateAsync(recipeExist);
                 }
-
-                await uow.CommitAllAsync();
+                await uow.CommitAsync("SapScada");
 
                 await logger.LogInfoAsync("CommStatus actualizado en la Db principal (SapScada)",
                     "Metodo: SyncRecipeHandler");
@@ -137,18 +129,17 @@ public class SyncRecipeHandler(
         catch (Exception ex)
         {
             await uow.RollbackAllAsync();
-            await logger.LogErrorAsync($"Error: {ex.Message}", "Metodo: SyncRecipeHandler");
+            await logger.LogErrorAsync($"Error: {ex}", "Metodo: SyncRecipeHandler");
             return new Response<SyncRecipeResponse>
             {
                 StatusCode = HttpStatusCode.InternalServerError,
                 Content = new SyncRecipeResponse
                 {
                     Result = false,
-                    Message = $"Error: {ex.Message}"
+                    Message = $"Error: {ex}"
                 }
             };
         }
 
     }
-
 }

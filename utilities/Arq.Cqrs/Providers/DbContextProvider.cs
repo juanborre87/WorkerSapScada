@@ -9,7 +9,10 @@ public class DbContextProvider : IDbContextProvider
 {
     private readonly IServiceProvider _serviceProvider;
     private readonly Dictionary<string, Func<IServiceProvider, DbContext>> _factories;
+    // Cache de scopes por nombre de contexto
     private readonly ConcurrentDictionary<string, IServiceScope> _scopes = new();
+    // Cache de instancias de DbContext por nombre
+    private readonly ConcurrentDictionary<string, DbContext> _contexts = new();
 
     public DbContextProvider(
         IServiceProvider serviceProvider,
@@ -35,19 +38,22 @@ public class DbContextProvider : IDbContextProvider
     // Permite limpiar scopes (usar en UnitOfWork.Dispose o al terminar operación)
     public void DisposeScopeFor(string name)
     {
+        if (_contexts.TryRemove(name, out var context))
+            context.Dispose();
+
         if (_scopes.TryRemove(name, out var scope))
-        {
             scope.Dispose();
-        }
     }
 
     // Limpia todos los scopes
     public void DisposeAllScopes()
     {
-        foreach (var kv in _scopes)
-        {
+        foreach (var kv in _contexts)
             kv.Value.Dispose();
-        }
+        _contexts.Clear();
+
+        foreach (var kv in _scopes)
+            kv.Value.Dispose();
         _scopes.Clear();
     }
 

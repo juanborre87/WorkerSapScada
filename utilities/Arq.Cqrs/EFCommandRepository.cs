@@ -40,6 +40,10 @@ public class EFCommandRepository<T> : IEFCommandRepository<T> where T : class
             _dbContext.Set<T>().Attach(entity);
             entry.State = EntityState.Modified;
         }
+        else
+        {
+            entry.State = EntityState.Modified;
+        }
     }
 
     public async Task UpdateRangeAsync(IEnumerable<T> entities)
@@ -52,6 +56,10 @@ public class EFCommandRepository<T> : IEFCommandRepository<T> where T : class
             if (entry.State == EntityState.Detached)
             {
                 _dbContext.Set<T>().Attach(entity);
+                entry.State = EntityState.Modified;
+            }
+            else
+            {
                 entry.State = EntityState.Modified;
             }
         }
@@ -69,6 +77,12 @@ public class EFCommandRepository<T> : IEFCommandRepository<T> where T : class
     public async Task DeleteRangeAsync(IEnumerable<T> entities)
     {
         ArgumentNullException.ThrowIfNull(entities);
+        foreach (var entity in entities)
+        {
+            var entry = _dbContext.Entry(entity);
+            if (entry.State == EntityState.Detached)
+                _dbContext.Set<T>().Attach(entity);
+        }
         _dbContext.Set<T>().RemoveRange(entities);
     }
 }
