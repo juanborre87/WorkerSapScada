@@ -37,18 +37,18 @@ public class Worker : BackgroundService
             try
             {
                 var dbChoices = new List<string> { "SapScada1", "SapScada2" };
-                //await scopedService.SyncProduct(dbChoices);
-                //await Task.Delay(TimeSpan.FromSeconds(delayTime), stoppingToken);
+                await scopedService.SyncProduct(dbChoices);
+                await Task.Delay(TimeSpan.FromSeconds(delayTime), stoppingToken);
 
 
-                //await scopedService.SyncRecipe(dbChoices);
-                //await Task.Delay(TimeSpan.FromSeconds(delayTime), stoppingToken);
+                await scopedService.SyncRecipe(dbChoices);
+                await Task.Delay(TimeSpan.FromSeconds(delayTime), stoppingToken);
 
 
-                //await scopedService.OrderToDbScada("SapScada1");
-                //await Task.Delay(TimeSpan.FromSeconds(delayTime), stoppingToken);
-                //await scopedService.OrderToDbScada("SapScada2");
-                //await Task.Delay(TimeSpan.FromSeconds(delayTime), stoppingToken);
+                await scopedService.OrderToDbScada("SapScada1");
+                await Task.Delay(TimeSpan.FromSeconds(delayTime), stoppingToken);
+                await scopedService.OrderToDbScada("SapScada2");
+                await Task.Delay(TimeSpan.FromSeconds(delayTime), stoppingToken);
 
 
                 await scopedService.ConfirmToDbMain("SapScada1");
@@ -57,8 +57,8 @@ public class Worker : BackgroundService
                 await Task.Delay(TimeSpan.FromSeconds(delayTime), stoppingToken);
 
 
-                //await scopedService.ConfirmToSap("SapScada");
-                //await Task.Delay(TimeSpan.FromSeconds(delayTime), stoppingToken);
+                await scopedService.ConfirmToSap("SapScada");
+                await Task.Delay(TimeSpan.FromSeconds(delayTime), stoppingToken);
             }
             catch (Exception ex)
             {
