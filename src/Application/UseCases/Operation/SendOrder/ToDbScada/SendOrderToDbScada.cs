@@ -87,9 +87,9 @@ public class SendOrderToDbScadaHandler(
                     orderNew.MapToExisting(orderExistDbAux);
                     await orderCommandDbAux.UpdateAsync(orderExistDbAux);
                 }
-
-                await uow.CommitAsync(request.DbChoice);
             }
+
+            await uow.CommitAsync(request.DbChoice);
 
             // Actualiza los productos que fueron ingresados en la Bd de destino
             await uow.BeginTransactionAsync("SapScada");
