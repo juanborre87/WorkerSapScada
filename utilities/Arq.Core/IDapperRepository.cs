@@ -28,5 +28,5 @@ public interface IDapperRepository
     /// Returns the underlying (open) connection for advanced operations.
     /// Devuelve la conexión subyacente (abierta) para operaciones avanzadas.
     /// </summary>
-    IDbConnection GetOpenConnection();
+    IDbConnection GetConnection();
 }

@@ -70,6 +70,24 @@ public interface IEFQueryRepository<T> where T : class
     // Paging methods / Métodos con paginación
     // ───────────────────────────────────────────────────────────────
 
+
+    /// <summary>
+    /// Returns the first entity in a paged shape (metadata included), without includes.
+    /// Devuelve la primera entidad en forma paginada (con metadata), sin includes.
+    /// </summary>
+    Task<PagedResult<T>> FirstOrDefaultPageAsync(
+        Expression<Func<T, bool>> expr,
+        bool tracking = true);
+
+    /// <summary>
+    /// Returns one entity (with includes) wrapped in a PagedResult for frontend metadata needs.
+    /// Devuelve una entidad (con includes) envuelta en PagedResult para necesidades de metadata del frontend.
+    /// </summary>
+    Task<PagedResult<T>> FirstOrDefaultIncludeMultiplePagedAsync(
+        Expression<Func<T, bool>> expr,
+        bool tracking = true,
+        Func<IQueryable<T>, IIncludableQueryable<T, object>>? include = null);
+
     /// <summary>
     /// Returns a paged list of entities matching the built filter, with optional ordering.
     /// Devuelve una lista paginada de entidades que coinciden con el filtro construido, con ordenamiento opcional.
@@ -94,21 +112,15 @@ public interface IEFQueryRepository<T> where T : class
         Func<IQueryable<T>, IIncludableQueryable<T, object>>? include = null);
 
     /// <summary>
-    /// Returns the first entity in a paged shape (metadata included), without includes.
-    /// Devuelve la primera entidad en forma paginada (con metadata), sin includes.
+    /// Returns a paged result for a filtered query. Named 'Stream' to mirror the non-paged method, but returns a single page (not a live stream) to include metadata.
+    /// Devuelve un resultado paginado para una consulta filtrada. Se llama 'Stream' para reflejar el método sin paginación, pero retorna una página (no un stream) para incluir metadata.
     /// </summary>
-    Task<PagedResult<T>> FirstOrDefaultPageAsync(
+    Task<PagedResult<T>> StreamWherePageAsync(
         Expression<Func<T, bool>> expr,
+        int pageNumber,
+        int pageSize,
+        Func<IQueryable<T>, IOrderedQueryable<T>>? orderBy = null,
         bool tracking = true);
-
-    /// <summary>
-    /// Returns one entity (with includes) wrapped in a PagedResult for frontend metadata needs.
-    /// Devuelve una entidad (con includes) envuelta en PagedResult para necesidades de metadata del frontend.
-    /// </summary>
-    Task<PagedResult<T>> FirstOrDefaultIncludeMultiplePagedAsync(
-        Expression<Func<T, bool>> expr,
-        bool tracking = true,
-        Func<IQueryable<T>, IIncludableQueryable<T, object>>? include = null);
 
     /// <summary>
     /// Returns all entities in a paged result with optional ordering.
@@ -120,14 +132,4 @@ public interface IEFQueryRepository<T> where T : class
         Func<IQueryable<T>, IOrderedQueryable<T>>? orderBy = null,
         bool tracking = true);
 
-    /// <summary>
-    /// Returns a paged result for a filtered query. Named 'Stream' to mirror the non-paged method, but returns a single page (not a live stream) to include metadata.
-    /// Devuelve un resultado paginado para una consulta filtrada. Se llama 'Stream' para reflejar el método sin paginación, pero retorna una página (no un stream) para incluir metadata.
-    /// </summary>
-    Task<PagedResult<T>> StreamWherePageAsync(
-        Expression<Func<T, bool>> expr,
-        int pageNumber,
-        int pageSize,
-        Func<IQueryable<T>, IOrderedQueryable<T>>? orderBy = null,
-        bool tracking = true);
 }

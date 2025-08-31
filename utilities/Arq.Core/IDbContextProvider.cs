@@ -1,6 +1,6 @@
 ﻿using Microsoft.EntityFrameworkCore;
 
-namespace Arq.Cqrs.Interfaces;
+namespace Arq.Core;
 
 public interface IDbContextProvider
 {

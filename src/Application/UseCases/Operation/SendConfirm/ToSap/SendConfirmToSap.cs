@@ -33,6 +33,8 @@ public class SendConfirmToSapHandler(
 
         try
         {
+            await uow.BeginTransactionAsync("SapScada");
+
             // Buscar confirmaciones que tengan movimiento en la Bd principal
             var confirmsExistDbMain = await confirmQueryDbMain.WhereIncludeMultipleAsync(
                 x => x.CommStatus == 1 && x.ProcessOrderConfirmationMaterialMovements.Any(),
@@ -84,10 +86,10 @@ public class SendConfirmToSapHandler(
                 }
             }
 
+            await uow.CommitAllAsync();
+
             if (allSucceeded)
             {
-                await uow.CommitAllAsync();
-
                 await logger.LogInfoAsync(
                     $"Todas las confirmaciones se enviaron exitosamente a SAP y fueron actualizadas en SapScada",
                     "Metodo: SendConfirmToSapHandler");

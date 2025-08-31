@@ -34,6 +34,7 @@ public class SendConfirmToDbMainHandler(
         try
         {
             await uow.BeginTransactionAsync("SapScada");
+            await uow.BeginTransactionAsync(request.DbChoice);
 
             // Buscar confirmaciones en la Bd aux
             var confirmsExistDbAux = await confirmQueryDbAux.WhereIncludeMultipleAsync(
@@ -62,16 +63,15 @@ public class SendConfirmToDbMainHandler(
                 var newConfirm = confirmAux.MapTo<ProcessOrderConfirmation>();
                 await confirmCommandDbMain.AddAsync(newConfirm);
             }
-            await uow.CommitAsync("SapScada");
 
             // Actualiza las confirmaciones que fueron sincronizadas
-            await uow.BeginTransactionAsync(request.DbChoice);
             foreach (var confirm in confirmsExistDbAux)
             {
                 confirm.CommStatus = 2;
                 await confirmAuxCommandDbAux.UpdateAsync(confirm);
             }
-            await uow.CommitAsync(request.DbChoice);
+
+            await uow.CommitAllAsync();
 
             await logger.LogInfoAsync($"Adicion exitosa de las confirmaciones y movimientos en la Db: " +
                 $"{request.DbChoice}", "Metodo: SendConfirmToDbMainHandler");

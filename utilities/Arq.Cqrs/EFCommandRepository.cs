@@ -63,6 +63,8 @@ public class EFCommandRepository<T> : IEFCommandRepository<T> where T : class
                 entry.State = EntityState.Modified;
             }
         }
+
+        //return Task.CompletedTask;
     }
 
     public async Task DeleteAsync(T entity)

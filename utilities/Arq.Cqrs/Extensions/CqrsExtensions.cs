@@ -1,5 +1,4 @@
 ﻿using Arq.Core;
-using Arq.Cqrs.Interfaces;
 using Arq.Cqrs.Providers;
 using Microsoft.Extensions.DependencyInjection;
 

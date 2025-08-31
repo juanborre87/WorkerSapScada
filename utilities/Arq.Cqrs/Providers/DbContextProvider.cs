@@ -1,4 +1,4 @@
-﻿using Arq.Cqrs.Interfaces;
+﻿using Arq.Core;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using System.Collections.Concurrent;
@@ -32,7 +32,10 @@ public class DbContextProvider : IDbContextProvider
 
         // Obtiene el contexto por nombre. Crea un scope nuevo si no existe (por operación).
         var scope = _scopes.GetOrAdd(name, _ => _serviceProvider.CreateScope());
-        return factory(scope.ServiceProvider);
+        //return factory(scope.ServiceProvider);
+
+        // Cachear el contexto para no devolver instancias nuevas cada vez
+        return _contexts.GetOrAdd(name, _ => factory(scope.ServiceProvider));
     }
 
     // Permite limpiar scopes (usar en UnitOfWork.Dispose o al terminar operación)

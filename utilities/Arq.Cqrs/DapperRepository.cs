@@ -15,7 +15,7 @@ public class DapperRepository : IDapperRepository
         _context = context ?? throw new ArgumentNullException(nameof(context));
     }
 
-    public IDbConnection GetOpenConnection()
+    public IDbConnection GetConnection()
     {
         var conn = _context.Database.GetDbConnection();
         if (conn.State != ConnectionState.Open)
@@ -30,21 +30,21 @@ public class DapperRepository : IDapperRepository
 
     public async Task<IEnumerable<T>> QueryAsync<T>(string sql, object? param = null, CommandType commandType = CommandType.Text)
     {
-        using var conn = GetOpenConnection();
+        using var conn = GetConnection();
         var tx = GetCurrentTransaction();
         return await conn.QueryAsync<T>(sql, param, transaction: tx, commandType: commandType);
     }
 
     public async Task<T> QuerySingleAsync<T>(string sql, object? param = null, CommandType commandType = CommandType.Text)
     {
-        using var conn = GetOpenConnection();
+        using var conn = GetConnection();
         var tx = GetCurrentTransaction();
         return await conn.QuerySingleAsync<T>(sql, param, transaction: tx, commandType: commandType);
     }
 
     public async Task<int> ExecuteAsync(string sql, object? param = null, CommandType commandType = CommandType.Text)
     {
-        using var conn = GetOpenConnection();
+        using var conn = GetConnection();
         var tx = GetCurrentTransaction();
         return await conn.ExecuteAsync(sql, param, transaction: tx, commandType: commandType);
     }

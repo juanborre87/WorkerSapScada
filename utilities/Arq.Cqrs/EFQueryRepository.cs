@@ -1,5 +1,4 @@
 ﻿using Arq.Core;
-using Arq.Cqrs.Interfaces;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Query;
 using System.Linq.Expressions;
@@ -120,31 +119,58 @@ public class EFQueryRepository<T> : IEFQueryRepository<T> where T : class
     // Paging methods / Métodos con paginación
     // ───────────────────────────────────────────────────────────────
 
-    public async Task<PagedResult<T>> ListAllPageAsync(
-        int pageNumber,
-        int pageSize,
-        Func<IQueryable<T>, IOrderedQueryable<T>>? orderBy = null,
+    public async Task<PagedResult<T>> FirstOrDefaultPageAsync(
+        Expression<Func<T, bool>> expr,
         bool tracking = true)
     {
-        ValidatePagingParameters(pageNumber, pageSize);
         var query = _dbContext.Set<T>().AsQueryable();
+
+        if (expr != null)
+            query = query.Where(expr);
 
         if (!tracking)
             query = query.AsNoTracking();
 
         var totalRecords = await query.CountAsync();
+        var data = new List<T>();
 
-        if (orderBy != null)
-            query = orderBy(query);
-
-        var data = await query
-            .Skip((pageNumber - 1) * pageSize)
-            .Take(pageSize)
-            .ToListAsync();
+        var entity = await query.FirstOrDefaultAsync();
+        if (entity != null)
+            data.Add(entity);
 
         return new PagedResult<T>
         {
-            MetaData = BuildMetaData(pageNumber, pageSize, totalRecords),
+            MetaData = BuildMetaData(1, 1, totalRecords),
+            Data = data
+        };
+    }
+
+    public async Task<PagedResult<T>> FirstOrDefaultIncludeMultiplePagedAsync(
+        Expression<Func<T, bool>> expr,
+        bool tracking = true,
+        Func<IQueryable<T>, IIncludableQueryable<T, object>>? include = null)
+    {
+        var query = _dbContext.Set<T>().Where(expr);
+
+        if (expr != null)
+            query = query.Where(expr);
+
+        if (!tracking)
+            query = query.AsNoTracking();
+
+        if (include != null)
+            query = ApplyIncludes(query, include);
+
+        var totalRecords = await query.CountAsync();
+        var data = new List<T>();
+
+        var entity = await query.FirstOrDefaultAsync();
+        if (entity != null)
+            data.Add(entity);
+
+        return new PagedResult<T>
+        {
+            MetaData = BuildMetaData(1, 1, totalRecords),
             Data = data
         };
     }
@@ -219,62 +245,6 @@ public class EFQueryRepository<T> : IEFQueryRepository<T> where T : class
         };
     }
 
-    public async Task<PagedResult<T>> FirstOrDefaultPageAsync(
-        Expression<Func<T, bool>> expr,
-        bool tracking = true)
-    {
-        var query = _dbContext.Set<T>().AsQueryable();
-
-        if (expr != null)
-            query = query.Where(expr);
-
-        if (!tracking)
-            query = query.AsNoTracking();
-
-        var totalRecords = await query.CountAsync();
-        var data = new List<T>();
-
-        var entity = await query.FirstOrDefaultAsync();
-        if (entity != null)
-            data.Add(entity);
-
-        return new PagedResult<T>
-        {
-            MetaData = BuildMetaData(1, 1, totalRecords),
-            Data = data
-        };
-    }
-
-    public async Task<PagedResult<T>> FirstOrDefaultIncludeMultiplePagedAsync(
-        Expression<Func<T, bool>> expr,
-        bool tracking = true,
-        Func<IQueryable<T>, IIncludableQueryable<T, object>>? include = null)
-    {
-        var query = _dbContext.Set<T>().Where(expr);
-
-        if (expr != null)
-            query = query.Where(expr);
-
-        if (!tracking)
-            query = query.AsNoTracking();
-
-        if (include != null)
-            query = ApplyIncludes(query, include);
-
-        var totalRecords = await query.CountAsync();
-        var data = new List<T>();
-
-        var entity = await query.FirstOrDefaultAsync();
-        if (entity != null)
-            data.Add(entity);
-
-        return new PagedResult<T>
-        {
-            MetaData = BuildMetaData(1, 1, totalRecords),
-            Data = data
-        };
-    }
-
     public async Task<PagedResult<T>> StreamWherePageAsync(
         Expression<Func<T, bool>> expr,
         int pageNumber,
@@ -305,13 +275,42 @@ public class EFQueryRepository<T> : IEFQueryRepository<T> where T : class
         };
     }
 
+    public async Task<PagedResult<T>> ListAllPageAsync(
+        int pageNumber,
+        int pageSize,
+        Func<IQueryable<T>, IOrderedQueryable<T>>? orderBy = null,
+        bool tracking = true)
+    {
+        ValidatePagingParameters(pageNumber, pageSize);
+        var query = _dbContext.Set<T>().AsQueryable();
+
+        if (!tracking)
+            query = query.AsNoTracking();
+
+        var totalRecords = await query.CountAsync();
+
+        if (orderBy != null)
+            query = orderBy(query);
+
+        var data = await query
+            .Skip((pageNumber - 1) * pageSize)
+            .Take(pageSize)
+            .ToListAsync();
+
+        return new PagedResult<T>
+        {
+            MetaData = BuildMetaData(pageNumber, pageSize, totalRecords),
+            Data = data
+        };
+    }
+
     // ───────────────────────────────────────────────────────────────
     // Helpers
     // ───────────────────────────────────────────────────────────────
 
     private static IQueryable<T> ApplyIncludes(
         IQueryable<T> query,
-        Func<IQueryable<T>, 
+        Func<IQueryable<T>,
         IIncludableQueryable<T, object>>? include)
     {
         return include != null ? include(query) : query;

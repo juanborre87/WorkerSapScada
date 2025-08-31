@@ -35,6 +35,7 @@ public class SendOrderToDbScadaHandler(
         try
         {
             await uow.BeginTransactionAsync(request.DbChoice);
+            await uow.BeginTransactionAsync("SapScada");
 
             int destinoRecetaDeControl = request.DbChoice switch
             {
@@ -89,16 +90,14 @@ public class SendOrderToDbScadaHandler(
                 }
             }
 
-            await uow.CommitAsync(request.DbChoice);
-
             // Actualiza los productos que fueron ingresados en la Bd de destino
-            await uow.BeginTransactionAsync("SapScada");
             foreach (var order in ordersExistDbMain)
             {
                 order.CommStatus = 2;
                 await orderCommandDbMain.UpdateAsync(order);
             }
-            await uow.CommitAsync("SapScada");
+
+            await uow.CommitAllAsync();
 
             await logger.LogInfoAsync($"Adicion exitosa de las ordenes y componentes en la Db: " +
                 $"{request.DbChoice}", "Metodo: SendOrderToDbScadaHandler");
