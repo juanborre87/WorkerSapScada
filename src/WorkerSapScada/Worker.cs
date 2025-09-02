@@ -26,11 +26,11 @@ public class Worker : BackgroundService
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
-        string delayTimeString = _configuration.GetValue<string>("Delay:TimeMinutes");
-        int delayTime = Convert.ToInt32(delayTimeString);
-
         while (!stoppingToken.IsCancellationRequested)
         {
+            string delayTimeString = _configuration.GetValue<string>("Delay:TimeSeconds");
+            bool sendWithoutMovements = _configuration.GetValue<bool>("MainSettings:SendWithoutMovements");
+            int delayTime = Convert.ToInt32(delayTimeString);
             using var scope = _scopeFactory.CreateScope();
             var scopedService = scope.ServiceProvider.GetRequiredService<IScopedService>();
 
@@ -57,7 +57,7 @@ public class Worker : BackgroundService
                 await Task.Delay(TimeSpan.FromSeconds(delayTime), stoppingToken);
 
 
-                await scopedService.ConfirmToSap("SapScada");
+                await scopedService.ConfirmToSap("SapScada", sendWithoutMovements);
                 await Task.Delay(TimeSpan.FromSeconds(delayTime), stoppingToken);
             }
             catch (Exception ex)
@@ -102,8 +102,9 @@ public interface IScopedService
     /// Metodo que envía la confirmacion a Sap
     /// </summary>
     /// <param name="DbChoice"></param>
+    /// <param name="sendWithoutMovements"></param>
     /// <returns></returns>
-    Task<bool> ConfirmToSap(string DbChoice);
+    Task<bool> ConfirmToSap(string DbChoice, bool sendWithoutMovements);
 }
 
 public class ScopedService : BaseApiController, IScopedService
@@ -129,9 +130,11 @@ public class ScopedService : BaseApiController, IScopedService
         return result.Content.Result;
     }
 
-    public async Task<bool> ConfirmToSap(string DbChoice)
+    public async Task<bool> ConfirmToSap(string DbChoice, bool sendWithoutMovements)
     {
-        var result = await _mediator.Send(new SendConfirmToSap() { DbChoice = DbChoice });
+        var result = await _mediator.Send(new SendConfirmToSap() { 
+            DbChoice = DbChoice, 
+            SendWithoutMovements = sendWithoutMovements });
         return result.Content.Result;
     }
 

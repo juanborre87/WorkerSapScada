@@ -13,6 +13,7 @@ namespace Application.UseCases.Operation.SendConfirm.ToSap;
 public class SendConfirmToSap : IRequest<Response<SendConfirmToSapResponse>>
 {
     public string DbChoice { get; set; }
+    public bool SendWithoutMovements { get; set; }
 }
 
 public class SendConfirmToSapHandler(
@@ -37,7 +38,7 @@ public class SendConfirmToSapHandler(
 
             // Buscar confirmaciones que tengan movimiento en la Bd principal
             var confirmsExistDbMain = await confirmQueryDbMain.WhereIncludeMultipleAsync(
-                x => x.CommStatus == 1 && x.ProcessOrderConfirmationMaterialMovements.Any(),
+                    x => x.CommStatus == 1,
                     tracking: true,
                     q => q.Include(x => x.Order)
                             .ThenInclude(o => o.ProcessOrderComponents)
@@ -64,6 +65,9 @@ public class SendConfirmToSapHandler(
             {
                 try
                 {
+                    if (request.SendWithoutMovements)
+                        confirm.ProcessOrderConfirmationMaterialMovements = [];
+
                     var sapRequest = SapConfirmationMapper.MapToDto(confirm);
                     var result = await sapOrderService.SendOrderConfirmationAsync(sapRequest);
 
@@ -74,6 +78,9 @@ public class SendConfirmToSapHandler(
 
                     await logger.LogInfoAsync(
                         $"Confirmación {confirm.IdGuid} enviada correctamente a SAP y actualizada en SapScada",
+                        "Metodo: SendConfirmToSapHandler");
+                    await logger.LogInfoAsync(
+                        $"StatusCode {(int)result.Code} / {result.Code}",
                         "Metodo: SendConfirmToSapHandler");
                 }
                 catch (Exception exItem)
