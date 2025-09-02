@@ -24,7 +24,8 @@ public class SyncRecipeHandler(
     public async Task<Response<SyncRecipeResponse>> Handle(SyncRecipe request, CancellationToken cancellationToken)
     {
 
-        await logger.LogInfoAsync("Inicio de sincronizacion de productos", "Metodo: SyncProductHandler");
+        await logger.LogInfoAsync("Inicio de sincronizacion de recetas",
+            "Metodo: SyncRecipeHandler");
 
         var recipeCommandDbMain = uow.CommandRepository<Recipe>("SapScada");
         var recipeQueryDbMain = uow.QueryRepository<Recipe>("SapScada");

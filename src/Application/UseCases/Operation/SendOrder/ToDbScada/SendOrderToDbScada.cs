@@ -24,8 +24,9 @@ public class SendOrderToDbScadaHandler(
     public async Task<Response<SendOrderToDbScadaResponse>> Handle(SendOrderToDbScada request, CancellationToken cancellationToken)
     {
 
-        await logger.LogInfoAsync("Inicio de sincronización de ordenes", 
+        await logger.LogInfoAsync($"Inicio de sincronización de ordenes a Db {request.DbChoice}", 
             "Metodo: SendOrderToDbScadaHandler");
+
         var orderCommandDbMain = uow.CommandRepository<ProcessOrder>("SapScada");
         var orderQueryDbMain = uow.QueryRepository<ProcessOrder>("SapScada");
         var orderCommandDbAux = uow.CommandRepository<ProcessOrder>(request.DbChoice);

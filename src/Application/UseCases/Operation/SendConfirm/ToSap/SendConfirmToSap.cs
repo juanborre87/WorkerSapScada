@@ -25,8 +25,9 @@ public class SendConfirmToSapHandler(
 {
     public async Task<Response<SendConfirmToSapResponse>> Handle(SendConfirmToSap request, CancellationToken cancellationToken)
     {
-        await logger.LogInfoAsync("Inicio de sincronización de órdenes",
+        await logger.LogInfoAsync("Inicio de envío de confirmaciones a SAP",
             "Metodo: SendConfirmToSapHandler");
+
         var orderCommandDbMain = uow.CommandRepository<ProcessOrder>("SapScada");
         var orderQueryDbMain = uow.QueryRepository<ProcessOrder>("SapScada");
         var confirmQueryDbMain = uow.QueryRepository<ProcessOrderConfirmation>("SapScada");

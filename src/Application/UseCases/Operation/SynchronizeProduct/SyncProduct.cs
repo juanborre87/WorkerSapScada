@@ -25,6 +25,7 @@ public class SyncProductHandler(
 
         await logger.LogInfoAsync("Inicio de sincronizacion de productos", 
             "Metodo: SyncProductHandler");
+
         var productCommandDbMain = uow.CommandRepository<Product>("SapScada");
         var productQueryDbMain = uow.QueryRepository<Product>("SapScada");
 

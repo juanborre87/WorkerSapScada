@@ -24,8 +24,9 @@ public class SendConfirmToDbMainHandler(
     public async Task<Response<SendConfirmToDbMainResponse>> Handle(SendConfirmToDbMain request, CancellationToken cancellationToken)
     {
 
-        await logger.LogInfoAsync("Inicio de sincronización de órdenes",
+        await logger.LogInfoAsync("Inicio de sincronización de confirmaciones a Db Principal",
             "Metodo: SendConfirmToDbMainHandler");
+
         var confirmCommandDbMain = uow.CommandRepository<ProcessOrderConfirmation>("SapScada");
         var confirmQueryDbAux = uow.QueryRepository<ProcessOrderConfirmation>(request.DbChoice);
         var confirmAuxCommandDbAux = uow.CommandRepository<ProcessOrderConfirmation>(request.DbChoice);
