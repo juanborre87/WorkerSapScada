@@ -80,8 +80,7 @@ public class SendConfirmToSapHandler(
                         $"Confirmación {confirm.IdGuid} enviada correctamente a SAP y actualizada en SapScada",
                         "Metodo: SendConfirmToSapHandler");
                     await logger.LogInfoAsync(
-                        $"StatusCode {(int)result.Code} / {result.Code}",
-                        "Metodo: SendConfirmToSapHandler");
+                        $"StatusCode {(int)result.Code} / {result.Code}");
                 }
                 catch (Exception exItem)
                 {

@@ -1,6 +1,7 @@
 ﻿using Application.Interfaces;
 using Domain.Dtos;
 using Domain.Models;
+using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using System.Net;
 using System.Net.Http.Headers;
@@ -56,6 +57,7 @@ namespace Infrastructure.Services
                 // 2. Serializar el DTO
                 var json = JsonConvert.SerializeObject(confirmation, Formatting.Indented);
                 Console.WriteLine(json);
+                await _logger.LogInfoAsync($"Json enviado: {json}");
                 var content = new StringContent(json, Encoding.UTF8, "application/json");
 
                 // 3. Crear solicitud POST
