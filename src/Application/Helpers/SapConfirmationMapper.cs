@@ -1,5 +1,6 @@
 ﻿using Domain.Entities;
 using Domain.Models;
+using System.Globalization;
 
 namespace Application.Helpers;
 
@@ -61,8 +62,8 @@ public static class SapConfirmationMapper
             ConfirmationUnit = confirmation.ConfirmationUnit,
             ConfirmationUnitISOCode = confirmation.ConfirmationUnitIsocode,
             ConfirmationUnitSAPCode = confirmation.ConfirmationUnitSapcode,
-            ConfirmationYieldQuantity = confirmation.ConfirmationYieldQuantity?.ToString() ?? "0",
-            ConfirmationScrapQuantity = confirmation.ConfirmationScrapQuantity?.ToString() ?? "0",
+            ConfirmationYieldQuantity = confirmation.ConfirmationYieldQuantity?.ToString(CultureInfo.InvariantCulture) ?? "0",
+            ConfirmationScrapQuantity = confirmation.ConfirmationScrapQuantity?.ToString(CultureInfo.InvariantCulture) ?? "0",
             VarianceReasonCode = confirmation.VarianceReasonCode,
             // puedes mapear más cantidades de trabajo si tienes datos
             //OpWorkQuantityUnit1 = null,
@@ -142,7 +143,7 @@ public static class SapConfirmationMapper
                         EntryUnit = component.EntryUnit,
                         EntryUnitISOCode = component.EntryUnitIsocode,
                         EntryUnitSAPCode = component.EntryUnitSapcode,
-                        QuantityInEntryUnit = m.QuantityInEntryUnit?.ToString() ?? "0",
+                        QuantityInEntryUnit = m.QuantityInEntryUnit?.ToString(CultureInfo.InvariantCulture) ?? "0",
                         ToProcOrderConfBatchCharc = new BatchCharacteristicsResults
                         {
                             Results = [] // Agrega características si aplica

@@ -29,9 +29,9 @@ public class Worker : BackgroundService
         string delayTimeString = _configuration.GetValue<string>("Delay:TimeMinutes");
         int delayTime = Convert.ToInt32(delayTimeString);
 
-        using var scope = _scopeFactory.CreateScope();
         while (!stoppingToken.IsCancellationRequested)
         {
+            using var scope = _scopeFactory.CreateScope();
             var scopedService = scope.ServiceProvider.GetRequiredService<IScopedService>();
 
             try
